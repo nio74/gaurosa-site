@@ -101,6 +101,52 @@ npm run start    # Avvia produzione
 npm run lint     # Linting
 ```
 
+## Deploy su Hostinger
+
+### 1. Collega Repository Git
+
+1. Vai su **Hostinger → Hosting → Gestisci**
+2. Sezione **Git** o **Avanzate → Git**
+3. Collega repository: `https://github.com/nio74/gaurosa-site`
+4. Branch: `main`
+
+### 2. Configura Build
+
+| Campo | Valore |
+|-------|--------|
+| **Build Command** | `npm install && npm run build` |
+| **Start Command** | `npm run start` |
+| **Node Version** | `18` o superiore |
+
+### 3. Variabili Ambiente
+
+In **Hostinger → Environment Variables**, aggiungi:
+
+```
+NEXT_PUBLIC_MAZGEST_API_URL=https://api.mazgest.org
+MAZGEST_API_KEY=chiedi-a-paolo
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_xxx
+STRIPE_SECRET_KEY=sk_live_xxx
+STRIPE_WEBHOOK_SECRET=whsec_xxx
+DATABASE_URL=mysql://user:pass@localhost:3306/gaurosa_db
+CRON_SECRET=genera-stringa-random
+NEXT_PUBLIC_SITE_URL=https://gaurosa.it
+```
+
+### 4. Database MySQL
+
+1. **Hostinger → Database → Crea nuovo database**
+2. Nome: `gaurosa_db`
+3. Copia credenziali in `DATABASE_URL`
+
+### 5. Cron Job (Sync Prodotti)
+
+1. **Hostinger → Avanzate → Cron Jobs**
+2. Comando: `curl -H "Authorization: Bearer TUO_CRON_SECRET" https://gaurosa.it/api/cron/sync`
+3. Frequenza: Ogni 5 minuti (`*/5 * * * *`)
+
+---
+
 ## Per Simone
 
 Leggi il file **[SIMONE.md](./SIMONE.md)** per la guida completa su come lavorare al progetto!
