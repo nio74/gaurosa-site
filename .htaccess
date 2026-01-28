@@ -1,0 +1,13 @@
+# Redirect tutto a cartella out/
+RewriteEngine On
+RewriteBase /
+
+# Se il file/cartella non esiste nella root, cerca in out/
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{DOCUMENT_ROOT}/out%{REQUEST_URI} -f [OR]
+RewriteCond %{DOCUMENT_ROOT}/out%{REQUEST_URI} -d
+RewriteRule ^(.*)$ /out/$1 [L]
+
+# Homepage -> out/index.html
+RewriteRule ^$ /out/index.html [L]
