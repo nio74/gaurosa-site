@@ -2,12 +2,21 @@
 RewriteEngine On
 RewriteBase /
 
-# Se il file/cartella non esiste nella root, cerca in out/
+# Homepage
+RewriteRule ^$ out/index.html [L]
+
+# Se richiesta una pagina (senza estensione), cerca in out/
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{DOCUMENT_ROOT}/out%{REQUEST_URI} -f [OR]
-RewriteCond %{DOCUMENT_ROOT}/out%{REQUEST_URI} -d
-RewriteRule ^(.*)$ /out/$1 [L]
+RewriteRule ^([^.]+)/?$ out/$1.html [L]
 
-# Homepage -> out/index.html
-RewriteRule ^$ /out/index.html [L]
+# Se il file esiste in out/, servilo
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{DOCUMENT_ROOT}/out/%{REQUEST_URI} -f
+RewriteRule ^(.*)$ out/$1 [L]
+
+# Risorse statiche (_next, images, etc)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^_next/(.*)$ out/_next/$1 [L]
