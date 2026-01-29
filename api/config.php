@@ -1,9 +1,6 @@
 <?php
 /**
  * Configurazione Database Gaurosa.it
- *
- * LOCALE: usa credenziali XAMPP
- * PRODUZIONE: cambiare con credenziali Hostinger
  */
 
 // Rileva ambiente
@@ -18,70 +15,77 @@ if ($isLocal) {
     define('DB_PASS', '');
 } else {
     // PRODUZIONE (HOSTINGER)
-    define('DB_HOST', 'localhost'); // Su Hostinger di solito è localhost
-    define('DB_NAME', 'u123456789_gaurosa'); // Cambiare con nome DB reale
-    define('DB_USER', 'u123456789_admin');   // Cambiare con user reale
-    define('DB_PASS', 'PASSWORD_SICURA');    // Cambiare con password reale
+    define('DB_HOST', 'localhost');
+    define('DB_NAME', 'u341208956_gaurosasito');
+    define('DB_USER', 'u341208956_paolo');
+    define('DB_PASS', '6#KvGR!d');
 }
 
-// API Key per autenticazione sync
-define('SYNC_API_KEY', 'dev-api-key'); // Cambiare in produzione!
+// JWT Secret
+define('JWT_SECRET', '191c7f0a8982de8ce7a84b0cfea54481a9f33d1b4ac8ddcc516a7fef0993d5e1');
+define('JWT_EXPIRY', 3600 * 24 * 7); // 7 giorni
 
-// Percorso uploads
-define('UPLOADS_PATH', __DIR__ . '/uploads/');
-define('UPLOADS_URL', '/api/uploads/');
+// MazGest API
+define('MAZGEST_API_URL', 'https://api.mazgest.org');
+define('MAZGEST_API_KEY', '431e0743e76469961f4be3ce724dba991c3f5f3f63aebd6e3ab6fa264062de84');
+
+// Email SMTP
+define('SMTP_HOST', 'smtp.hostinger.com');
+define('SMTP_PORT', 465);
+define('SMTP_USER', 'noreplay@gaurosa.it');
+define('SMTP_PASS', 'o8rbeNH8[');
+define('EMAIL_FROM', 'noreplay@gaurosa.it');
+define('EMAIL_FROM_NAME', 'Gaurosa Gioielli');
+
+// Site URL
+define('SITE_URL', $isLocal ? 'http://localhost:3001' : 'https://gaurosa.it');
 
 /**
  * Connessione PDO al database
  */
 function getDbConnection() {
-    try {
-        $pdo = new PDO(
-            "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4",
-            DB_USER,
-            DB_PASS,
-            [
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES => false,
-            ]
-        );
-        return $pdo;
-    } catch (PDOException $e) {
-        http_response_code(500);
-        die(json_encode(['success' => false, 'error' => 'Database connection failed: ' . $e->getMessage()]));
+    static $pdo = null;
+    if ($pdo === null) {
+        try {
+            $pdo = new PDO(
+                "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4",
+                DB_USER,
+                DB_PASS,
+                [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                    PDO::ATTR_EMULATE_PREPARES => false,
+                ]
+            );
+        } catch (PDOException $e) {
+            jsonResponse(['success' => false, 'error' => 'Database connection failed'], 500);
+        }
     }
+    return $pdo;
 }
 
 /**
- * Verifica API key
- */
-function verifyApiKey() {
-    $headers = getallheaders();
-    $apiKey = $headers['X-Api-Key'] ?? $_POST['api_key'] ?? $_GET['api_key'] ?? null;
-
-    if ($apiKey !== SYNC_API_KEY) {
-        http_response_code(401);
-        die(json_encode(['success' => false, 'error' => 'API key non valida']));
-    }
-}
-
-/**
- * Risposta JSON
+ * Risposta JSON con CORS
  */
 function jsonResponse($data, $statusCode = 200) {
     http_response_code($statusCode);
     header('Content-Type: application/json');
+    header('Access-Control-Allow-Origin: *');
+    header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+    header('Access-Control-Allow-Headers: Content-Type, Authorization');
+
+    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+        exit;
+    }
+
     echo json_encode($data);
     exit;
 }
 
 /**
- * Genera slug da nome
+ * Ottieni body JSON della richiesta
  */
-function generateSlug($name, $code) {
-    $slug = strtolower($name);
-    $slug = preg_replace('/[^a-z0-9]+/', '-', $slug);
-    $slug = trim($slug, '-');
-    return $slug . '-' . strtolower($code);
+function getJsonBody() {
+    $json = file_get_contents('php://input');
+    return json_decode($json, true) ?? [];
 }
