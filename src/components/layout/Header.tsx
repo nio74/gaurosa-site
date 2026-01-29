@@ -6,13 +6,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, ShoppingBag, Search, User } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
 
+// Sottocategorie stabili dei Gioielli
 const navigation = [
-  { name: 'Home', href: '/' },
-  { name: 'Gioielli', href: '/prodotti?categoria=gioielleria' },
-  { name: 'Orologi', href: '/prodotti?categoria=orologi' },
-  { name: 'Accessori', href: '/prodotti?categoria=accessori' },
-  { name: 'Chi Siamo', href: '/chi-siamo' },
-  { name: 'Contatti', href: '/contatti' },
+  { name: 'Anelli', href: '/prodotti?sottocategoria=anello' },
+  { name: 'Bracciali', href: '/prodotti?sottocategoria=bracciale' },
+  { name: 'Collane', href: '/prodotti?sottocategoria=collana' },
+  { name: 'Orecchini', href: '/prodotti?sottocategoria=orecchini' },
+  { name: 'Pendenti', href: '/prodotti?sottocategoria=pendente' },
 ];
 
 export default function Header() {
@@ -52,9 +52,12 @@ export default function Header() {
             <button className="p-2 text-gray-600 hover:text-gray-900 transition-colors">
               <Search className="w-5 h-5" />
             </button>
-            <button className="p-2 text-gray-600 hover:text-gray-900 transition-colors">
+            <Link
+              href="/account"
+              className="p-2 text-gray-600 hover:text-gray-900 transition-colors"
+            >
               <User className="w-5 h-5" />
-            </button>
+            </Link>
             <Link
               href="/carrello"
               className="p-2 text-gray-600 hover:text-gray-900 transition-colors relative"

@@ -30,8 +30,10 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files
+# env files (contengono segreti - NON committare)
+.env
 .env.local
+.env.production
 .env.production.local
 .env.development.local
 

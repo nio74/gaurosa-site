@@ -50,7 +50,6 @@ export default function HomePage() {
       <section className="relative h-[80vh] min-h-[600px] flex items-center justify-center overflow-hidden">
         {/* Background - Simone sostituirà con immagine reale */}
         <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900" />
-        <div className="absolute inset-0 bg-[url('/images/hero-pattern.svg')] opacity-10" />
 
         {/* Content */}
         <div className="relative z-10 container mx-auto px-4 text-center text-white">
