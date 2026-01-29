@@ -6,6 +6,7 @@
 // Rileva ambiente
 $isLocal = ($_SERVER['HTTP_HOST'] ?? 'localhost') === 'localhost'
         || strpos($_SERVER['HTTP_HOST'] ?? '', 'localhost') !== false;
+define('IS_LOCAL', $isLocal);
 
 if ($isLocal) {
     // SVILUPPO LOCALE (XAMPP)
@@ -70,7 +71,23 @@ function getDbConnection() {
 function jsonResponse($data, $statusCode = 200) {
     http_response_code($statusCode);
     header('Content-Type: application/json');
-    header('Access-Control-Allow-Origin: *');
+
+    // CORS - Allow specific origins for credentials
+    $origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+    $allowedOrigins = [
+        'https://gaurosa.it',
+        'https://www.gaurosa.it',
+        'http://localhost:3000',
+        'http://localhost:3001'
+    ];
+
+    if (in_array($origin, $allowedOrigins)) {
+        header('Access-Control-Allow-Origin: ' . $origin);
+    } else {
+        header('Access-Control-Allow-Origin: https://gaurosa.it');
+    }
+
+    header('Access-Control-Allow-Credentials: true');
     header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
     header('Access-Control-Allow-Headers: Content-Type, Authorization');
 

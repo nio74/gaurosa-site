@@ -40,7 +40,9 @@ export default function AccountPage() {
   useEffect(() => {
     async function checkAuth() {
       try {
-        const response = await fetch('/api/auth/me');
+        const response = await fetch('/api/auth/me', {
+          credentials: 'include'
+        });
         const data = await response.json();
         if (data.success && data.user) {
           setUser(data.user);
@@ -66,6 +68,7 @@ export default function AccountPage() {
         const response = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({
             email: formData.email,
             password: formData.password,
@@ -91,6 +94,7 @@ export default function AccountPage() {
         const response = await fetch('/api/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({
             email: formData.email,
             password: formData.password,
@@ -126,7 +130,10 @@ export default function AccountPage() {
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include'
+      });
       setUser(null);
       router.refresh();
     } catch {

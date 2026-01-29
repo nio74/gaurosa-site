@@ -37,12 +37,13 @@ try {
 
     jsonResponse([
         'success' => true,
-        'customer' => [
+        'user' => [
             'id' => $customer['id'],
             'email' => $customer['email'],
             'firstName' => $customer['first_name'],
             'lastName' => $customer['last_name'],
             'phone' => $customer['phone'],
+            'emailVerified' => true,
             'customerType' => $customer['customer_type'],
             'ragioneSociale' => $customer['ragione_sociale'],
             'codiceFiscale' => $customer['codice_fiscale'],

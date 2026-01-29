@@ -28,6 +28,7 @@ function VerifyEmailContent() {
         const response = await fetch('/api/auth/verify-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ token }),
         });
 

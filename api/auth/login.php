@@ -48,30 +48,32 @@ try {
     }
 
     // Crea token JWT
-    $token = createJWT([
+    $accessToken = createJWT([
         'id' => $customer['id'],
         'email' => $customer['email'],
         'firstName' => $customer['first_name'],
         'lastName' => $customer['last_name']
     ]);
 
+    // Genera refresh token
+    $refreshToken = generateRefreshToken();
+
+    // Imposta cookies httpOnly
+    setAuthCookies($accessToken, $refreshToken);
+
     // Aggiorna ultimo login
     $stmt = $pdo->prepare("UPDATE customers SET last_login_at = NOW(), updated_at = NOW() WHERE id = ?");
     $stmt->execute([$customer['id']]);
 
-    // Risposta senza password
-    unset($customer['password']);
-    unset($customer['verification_token']);
-
     jsonResponse([
         'success' => true,
-        'token' => $token,
-        'customer' => [
+        'user' => [
             'id' => $customer['id'],
             'email' => $customer['email'],
             'firstName' => $customer['first_name'],
             'lastName' => $customer['last_name'],
-            'phone' => $customer['phone']
+            'phone' => $customer['phone'],
+            'emailVerified' => (bool)$customer['email_verified']
         ]
     ]);
 

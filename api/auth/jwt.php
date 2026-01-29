@@ -5,6 +5,10 @@
 
 require_once __DIR__ . '/../config.php';
 
+// Cookie names (must match frontend expectations)
+define('AUTH_COOKIE_NAME', 'gaurosa_auth');
+define('REFRESH_COOKIE_NAME', 'gaurosa_refresh');
+
 function base64UrlEncode($data) {
     return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
 }
@@ -16,10 +20,10 @@ function base64UrlDecode($data) {
 /**
  * Crea un JWT token
  */
-function createJWT($payload) {
+function createJWT($payload, $expiry = null) {
     $header = json_encode(['typ' => 'JWT', 'alg' => 'HS256']);
     $payload['iat'] = time();
-    $payload['exp'] = time() + JWT_EXPIRY;
+    $payload['exp'] = time() + ($expiry ?? JWT_EXPIRY);
     $payload = json_encode($payload);
 
     $base64Header = base64UrlEncode($header);
@@ -53,17 +57,76 @@ function verifyJWT($token) {
 }
 
 /**
- * Ottieni utente autenticato dal token
+ * Set authentication cookies
+ */
+function setAuthCookies($accessToken, $refreshToken = null) {
+    $secure = !IS_LOCAL; // Use secure cookies in production
+    $sameSite = 'Lax';
+
+    // Access token cookie (15 minutes)
+    setcookie(AUTH_COOKIE_NAME, $accessToken, [
+        'expires' => time() + (15 * 60),
+        'path' => '/',
+        'secure' => $secure,
+        'httponly' => true,
+        'samesite' => $sameSite
+    ]);
+
+    // Refresh token cookie (30 days)
+    if ($refreshToken) {
+        setcookie(REFRESH_COOKIE_NAME, $refreshToken, [
+            'expires' => time() + (30 * 24 * 60 * 60),
+            'path' => '/',
+            'secure' => $secure,
+            'httponly' => true,
+            'samesite' => $sameSite
+        ]);
+    }
+}
+
+/**
+ * Clear authentication cookies
+ */
+function clearAuthCookies() {
+    setcookie(AUTH_COOKIE_NAME, '', [
+        'expires' => time() - 3600,
+        'path' => '/',
+        'httponly' => true
+    ]);
+    setcookie(REFRESH_COOKIE_NAME, '', [
+        'expires' => time() - 3600,
+        'path' => '/',
+        'httponly' => true
+    ]);
+}
+
+/**
+ * Generate a random refresh token
+ */
+function generateRefreshToken() {
+    return bin2hex(random_bytes(32));
+}
+
+/**
+ * Ottieni utente autenticato dal cookie o header
  */
 function getAuthUser() {
-    $headers = getallheaders();
-    $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+    // First try cookie
+    $token = $_COOKIE[AUTH_COOKIE_NAME] ?? null;
 
-    if (!preg_match('/Bearer\s+(\S+)/', $authHeader, $matches)) {
-        return null;
+    // Fallback to Authorization header
+    if (!$token) {
+        $headers = getallheaders();
+        $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+
+        if (preg_match('/Bearer\s+(\S+)/', $authHeader, $matches)) {
+            $token = $matches[1];
+        }
     }
 
-    return verifyJWT($matches[1]);
+    if (!$token) return null;
+
+    return verifyJWT($token);
 }
 
 /**
