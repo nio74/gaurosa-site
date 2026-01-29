@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Static Export per Hostinger (disabilitato per sviluppo locale)
-  // output: 'export',
+  // Static Export per Hostinger
+  output: 'export',
 
   // Disabilita ottimizzazione immagini (non supportata in static export)
   images: {
