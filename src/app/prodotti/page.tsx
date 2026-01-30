@@ -44,10 +44,11 @@ function ProductsPageContent() {
   const sottocategoria = searchParams.get('sottocategoria') || '';
   const search = searchParams.get('search') || '';
 
-  // Fetch prodotti
+  // Fetch prodotti dal database locale gaurosasite
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
+      // Costruisci URL con parametri
       const params = new URLSearchParams();
       if (categoria) params.set('categoria', categoria);
       if (sottocategoria) params.set('sottocategoria', sottocategoria);
@@ -56,11 +57,29 @@ function ProductsPageContent() {
       params.set('limit', '12');
       params.set('sort', sortBy);
 
-      const response = await fetch(`/api/products?${params}`);
+      const response = await fetch(`/api/products?${params.toString()}`);
       const data = await response.json();
 
       if (data.success) {
-        setProducts(data.data.products);
+        // Trasforma i prodotti nel formato atteso dal frontend
+        const transformedProducts: Product[] = data.data.products.map((p: any) => ({
+          code: p.code,
+          ean: p.ean,
+          name: p.name,
+          description: p.description,
+          load_type: p.load_type as Product['load_type'],
+          macro_category: p.macro_category,
+          supplier: p.supplier,
+          price: p.price,
+          images: p.images.map((img: any) => ({
+            url: img.url,
+            is_primary: img.is_primary,
+            position: img.position,
+          })),
+          stock: p.stock,
+          variants: p.variants,
+        }));
+        setProducts(transformedProducts);
         setTotalProducts(data.data.pagination.total);
         setTotalPages(data.data.pagination.pages);
       }

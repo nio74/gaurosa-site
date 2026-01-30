@@ -30,6 +30,9 @@ define('JWT_EXPIRY', 3600 * 24 * 7); // 7 giorni
 define('MAZGEST_API_URL', 'https://api.mazgest.org');
 define('MAZGEST_API_KEY', '431e0743e76469961f4be3ce724dba991c3f5f3f63aebd6e3ab6fa264062de84');
 
+// Sync API Key (usata per sincronizzazione prodotti da MazGest)
+define('SYNC_API_KEY', 'gaurosa_prod_2026_secure_key_change_me');
+
 // Email SMTP
 define('SMTP_HOST', 'smtp.hostinger.com');
 define('SMTP_PORT', 465);
