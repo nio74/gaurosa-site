@@ -102,6 +102,8 @@ export interface ProductsResponse {
     products: Product[];
     pagination: {
       total: number;
+      pages: number;
+      page: number;
       limit: number;
       offset: number;
       has_more: boolean;
@@ -118,14 +120,18 @@ export interface ProductResponse {
  * Ottieni lista prodotti
  */
 export async function getProducts(options?: {
-  category?: string;
+  categoria?: string;
+  sottocategoria?: string;
+  category?: string; // retrocompatibilità
   brand?: string;
   search?: string;
   limit?: number;
+  page?: number;
   offset?: number;
+  sort?: 'newest' | 'price_asc' | 'price_desc' | 'name_asc';
 }): Promise<ProductsResponse> {
   return mazgestFetch<ProductsResponse>('/products', {
-    params: options,
+    params: options as Record<string, string | number | undefined>,
     next: { revalidate: 60 }, // Cache 1 minuto
   });
 }
