@@ -182,29 +182,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Inserimento prodotto
                 $stmt = $pdo->prepare("
                     INSERT INTO products (
-                        mazgest_id, code, name, price, stock, main_category, subcategory, created_at, updated_at
+                        mazgest_id, code, name, slug, price, stock, main_category, subcategory, created_at, updated_at
                     ) VALUES (
-                        :mazgest_id, :code, :name, :price, :stock, :main_category, :subcategory, NOW(), NOW()
+                        :mazgest_id, :code, :name, :slug, :price, :stock, :main_category, :subcategory, NOW(3), NOW(3)
                     ) ON DUPLICATE KEY UPDATE
                         name = VALUES(name),
                         price = VALUES(price),
                         stock = VALUES(stock),
                         main_category = VALUES(main_category),
                         subcategory = VALUES(subcategory),
-                        updated_at = NOW()
+                        updated_at = NOW(3)
                 ");
                 
                 $stmt->execute([
                     'mazgest_id' => $product['id'] ?? null,
                     'code' => $product['code'] ?? null,
                     'name' => $product['name'] ?? 'Prodotto senza nome',
+                    'slug' => strtolower($product['code'] ?? 'prodotto'),
                     'price' => $product['public_price'] ?? 0,
                     'stock' => $product['stock'] ?? 0,
                     'main_category' => $product['main_category'] ?? null,
                     'subcategory' => $product['subcategory'] ?? null,
                 ]);
                 
-                $productId = $pdo->lastInsertId() ?: $pdo->query("SELECT id FROM products WHERE mazgest_id = " . ($product['id'] ?? 0))->fetchColumn();
+                // Ottieni ID prodotto (nuovo o esistente)
+                $productId = $pdo->lastInsertId();
+                if (!$productId) {
+                    $stmt = $pdo->prepare("SELECT id FROM products WHERE mazgest_id = ?");
+                    $stmt->execute([$product['id'] ?? 0]);
+                    $productId = $stmt->fetchColumn();
+                }
                 
                 // Gestione immagini
                 if (!empty($product['images']) && $productId) {
@@ -219,8 +226,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     // Inserisci nuove immagini
                     $imgStmt = $pdo->prepare("
-                        INSERT INTO product_images (product_id, url, is_primary, sort_order, created_at) 
-                        VALUES (?, ?, ?, ?, NOW())
+                        INSERT INTO product_images (product_id, url, is_primary, sort_order) 
+                        VALUES (?, ?, ?, ?)
                     ");
                     
                     foreach ($product['images'] as $index => $image) {
@@ -242,9 +249,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 
                 $pdo->commit();
+                $pdo->commit();
                 $processed++;
                 
             } catch (Exception $e) {
+                $pdo->rollback();
                 $failed++;
                 $errors[] = "Prodotto {$product['id']}: " . $e->getMessage();
             }
