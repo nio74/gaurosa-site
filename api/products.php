@@ -59,9 +59,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     try {
         $pdo = getDbConnection();
         
-        // Parametri query
-        $category = $_GET['category'] ?? null;
-        $subcategory = $_GET['subcategory'] ?? null;
+        // Parametri query (supporta sia inglese che italiano)
+        $category = $_GET['category'] ?? $_GET['categoria'] ?? null;
+        $subcategory = $_GET['subcategory'] ?? $_GET['sottocategoria'] ?? null;
         $search = $_GET['search'] ?? null;
         $limit = min((int)($_GET['limit'] ?? 20), 100); // Max 100
         $offset = max((int)($_GET['offset'] ?? 0), 0);
@@ -70,13 +70,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $where = ['1=1']; // Sempre vero
         $params = [];
         
+        // Debug parametri
+        error_log("API Products - category: " . ($category ?? 'null') . ", subcategory: " . ($subcategory ?? 'null'));
+        
         if ($category && $category !== 'all') {
-            $where[] = 'main_category = :category';
+            $where[] = 'p.main_category = :category';
             $params['category'] = $category;
         }
         
         if ($subcategory && $subcategory !== 'all') {
-            $where[] = 'subcategory = :subcategory';
+            $where[] = 'p.subcategory = :subcategory';
             $params['subcategory'] = $subcategory;
         }
         
