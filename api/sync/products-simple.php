@@ -107,7 +107,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         
         foreach ($products as $product) {
             try {
-                // Inserimento semplificato
+                $pdo->beginTransaction();
+                
+                // Inserimento prodotto
                 $stmt = $pdo->prepare("
                     INSERT INTO products (
                         mazgest_id, code, name, price, stock, main_category, subcategory, created_at, updated_at
@@ -132,6 +134,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'subcategory' => $product['subcategory'] ?? null,
                 ]);
                 
+                $productId = $pdo->lastInsertId() ?: $pdo->query("SELECT id FROM products WHERE mazgest_id = " . ($product['id'] ?? 0))->fetchColumn();
+                
+                // Gestione immagini
+                if (!empty($product['images']) && $productId) {
+                    // Rimuovi immagini esistenti
+                    $pdo->prepare("DELETE FROM product_images WHERE product_id = ?")->execute([$productId]);
+                    
+                    // Inserisci nuove immagini
+                    $imgStmt = $pdo->prepare("
+                        INSERT INTO product_images (product_id, url, is_primary, sort_order, created_at) 
+                        VALUES (?, ?, ?, ?, NOW())
+                    ");
+                    
+                    foreach ($product['images'] as $index => $image) {
+                        $imgStmt->execute([
+                            $productId,
+                            $image['url'] ?? '',
+                            $image['is_primary'] ?? ($index === 0 ? 1 : 0),
+                            $image['sort_order'] ?? $index
+                        ]);
+                    }
+                }
+                
+                $pdo->commit();
                 $processed++;
                 
             } catch (Exception $e) {

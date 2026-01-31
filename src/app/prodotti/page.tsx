@@ -64,20 +64,21 @@ function ProductsPageContent() {
         // Trasforma i prodotti nel formato atteso dal frontend
         const transformedProducts: Product[] = data.data.products.map((p: any) => ({
           code: p.code,
-          ean: p.ean,
+          ean: p.ean || '',
           name: p.name,
-          description: p.description,
-          load_type: p.load_type as Product['load_type'],
-          macro_category: p.macro_category,
-          supplier: p.supplier,
+          description: p.description || '',
+          load_type: (p.category || 'gioielleria') as Product['load_type'],
+          macro_category: p.category || 'gioielli',
+          supplier: p.supplier || '',
           price: p.price,
-          images: p.images.map((img: any) => ({
+          images: (p.images || []).map((img: any) => ({
             url: img.url,
             is_primary: img.is_primary,
             position: img.position,
           })),
           stock: p.stock,
-          variants: p.variants,
+          inStock: p.inStock,
+          variants: p.variants || [],
         }));
         setProducts(transformedProducts);
         setTotalProducts(data.data.pagination.total);

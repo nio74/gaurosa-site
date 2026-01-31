@@ -85,23 +85,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             $params['search'] = '%' . $search . '%';
         }
         
-        // Query prodotti
+        // Query prodotti con immagini
         $sql = "
             SELECT 
-                id,
-                mazgest_id,
-                code,
-                name,
-                price,
-                compare_at_price,
-                stock,
-                main_category,
-                subcategory,
-                created_at,
-                updated_at
-            FROM products 
+                p.id,
+                p.mazgest_id,
+                p.code,
+                p.name,
+                p.price,
+                p.compare_at_price,
+                p.stock,
+                p.main_category,
+                p.subcategory,
+                p.created_at,
+                p.updated_at,
+                GROUP_CONCAT(
+                    CONCAT(pi.url, '|', pi.is_primary, '|', pi.sort_order)
+                    ORDER BY pi.is_primary DESC, pi.sort_order ASC
+                    SEPARATOR ','
+                ) as images_data
+            FROM products p
+            LEFT JOIN product_images pi ON p.id = pi.product_id
             WHERE " . implode(' AND ', $where) . "
-            ORDER BY created_at DESC
+            GROUP BY p.id
+            ORDER BY p.created_at DESC
             LIMIT :limit OFFSET :offset
         ";
         
@@ -128,6 +135,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         
         // Formatta prodotti per frontend
         $formattedProducts = array_map(function($product) {
+            // Parse immagini
+            $images = [];
+            if (!empty($product['images_data'])) {
+                $imageStrings = explode(',', $product['images_data']);
+                foreach ($imageStrings as $imgString) {
+                    $parts = explode('|', $imgString);
+                    if (count($parts) >= 3) {
+                        $images[] = [
+                            'url' => $parts[0],
+                            'is_primary' => (bool)$parts[1],
+                            'position' => (int)$parts[2]
+                        ];
+                    }
+                }
+            }
+            
             return [
                 'id' => (int)$product['id'],
                 'mazgestId' => (int)$product['mazgest_id'],
@@ -139,8 +162,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 'inStock' => (int)$product['stock'] > 0,
                 'category' => $product['main_category'],
                 'subcategory' => $product['subcategory'],
-                'slug' => strtolower($product['code']), // Slug semplice
-                'images' => [], // TODO: Aggiungere immagini
+                'slug' => strtolower($product['code']),
+                'images' => $images,
                 'createdAt' => $product['created_at'],
                 'updatedAt' => $product['updated_at'],
             ];
