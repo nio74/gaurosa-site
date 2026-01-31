@@ -1,6 +1,9 @@
 <?php
 /**
- * API Sync Prodotti - Versione Semplificata FIXED
+ * API Sync Prodotti - Versione Semplificata
+ * 
+ * POST /api/sync/products-simple.php
+ * Versione minima per debug
  */
 
 // CORS headers
@@ -18,11 +21,13 @@ define('SYNC_API_KEY', 'gaurosa_prod_2026_secure_key_change_me');
 
 // Database config
 if (strpos($_SERVER['HTTP_HOST'] ?? '', 'localhost') !== false) {
+    // Locale
     define('DB_HOST', 'localhost');
     define('DB_NAME', 'gaurosasite');
     define('DB_USER', 'root');
     define('DB_PASS', '');
 } else {
+    // Hostinger
     define('DB_HOST', 'localhost');
     define('DB_NAME', 'u341208956_gaurosasito');
     define('DB_USER', 'u341208956_paolo');
@@ -52,14 +57,24 @@ function getDbConnection() {
     }
 }
 
+/**
+ * Scarica immagine da MazGest e salva in /uploads/products su Hostinger
+ */
 function downloadImage($originalUrl, $productId, $index) {
     try {
+        // URL base MazGest pubblico
         $mazgestUrl = 'https://api.mazgest.org';
+        
+        // Costruisci URL completo
         $fullUrl = $originalUrl;
         if (strpos($originalUrl, 'http') !== 0) {
             $fullUrl = $mazgestUrl . $originalUrl;
         }
         
+        // Log per debug
+        error_log("Downloading image: {$fullUrl}");
+        
+        // Scarica immagine con cURL per maggiore controllo
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $fullUrl);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -72,31 +87,42 @@ function downloadImage($originalUrl, $productId, $index) {
         curl_close($ch);
         
         if ($imageData === false || $httpCode !== 200) {
+            error_log("Failed to download image: HTTP {$httpCode}");
             return null;
         }
         
+        // Determina estensione dal Content-Type o URL
         $pathInfo = pathinfo($originalUrl);
         $extension = strtolower($pathInfo['extension'] ?? 'jpg');
+        
+        // Valida estensione
         $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
         if (!in_array($extension, $allowedExtensions)) {
             $extension = 'jpg';
         }
         
+        // Nome file unico
         $fileName = "product_{$productId}_{$index}_{" . time() . "}.{$extension}";
         $uploadDir = __DIR__ . "/../../uploads/products";
         $localPath = "{$uploadDir}/{$fileName}";
         
+        // Crea directory se non esiste
         if (!is_dir($uploadDir)) {
             mkdir($uploadDir, 0755, true);
         }
         
+        // Salva file
         if (file_put_contents($localPath, $imageData) !== false) {
-            return "/uploads/products/{$fileName}";
+            $localUrl = "/uploads/products/{$fileName}";
+            error_log("Image saved successfully: {$localUrl}");
+            return $localUrl;
         }
         
+        error_log("Failed to save image to: {$localPath}");
         return null;
         
     } catch (Exception $e) {
+        error_log("Errore download immagine: " . $e->getMessage());
         return null;
     }
 }
@@ -126,11 +152,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $startTime = microtime(true);
         
+        // Leggi body JSON
         $input = json_decode(file_get_contents('php://input'), true);
+        
         if (!$input) {
             jsonResponse(['success' => false, 'error' => 'JSON non valido'], 400);
         }
         
+        // Verifica API key
         $apiKey = $input['api_key'] ?? null;
         if ($apiKey !== SYNC_API_KEY) {
             jsonResponse(['success' => false, 'error' => 'API key non valida'], 401);
@@ -150,6 +179,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
                 $pdo->beginTransaction();
                 
+                // Inserimento prodotto
                 $stmt = $pdo->prepare("
                     INSERT INTO products (
                         mazgest_id, code, name, slug, price, stock, main_category, subcategory, created_at, updated_at
@@ -175,6 +205,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'subcategory' => $product['subcategory'] ?? null,
                 ]);
                 
+                // Ottieni ID prodotto (nuovo o esistente)
                 $productId = $pdo->lastInsertId();
                 if (!$productId) {
                     $stmt = $pdo->prepare("SELECT id FROM products WHERE mazgest_id = ?");
@@ -182,14 +213,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $productId = $stmt->fetchColumn();
                 }
                 
+                // Gestione immagini
                 if (!empty($product['images']) && $productId) {
+                    // Rimuovi immagini esistenti
                     $pdo->prepare("DELETE FROM product_images WHERE product_id = ?")->execute([$productId]);
                     
+                    // Crea directory se non esiste
                     $uploadDir = __DIR__ . '/../../uploads/products';
                     if (!is_dir($uploadDir)) {
                         mkdir($uploadDir, 0755, true);
                     }
                     
+                    // Inserisci nuove immagini
                     $imgStmt = $pdo->prepare("
                         INSERT INTO product_images (product_id, url, is_primary, sort_order) 
                         VALUES (?, ?, ?, ?)
@@ -199,6 +234,69 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $originalUrl = $image['url'] ?? '';
                         $localUrl = $originalUrl;
                         
+                        // Scarica immagine se è un URL di MazGest
+                        if (!empty($originalUrl) && strpos($originalUrl, '/uploads/jewelry-products/') !== false) {
+                            $localUrl = downloadImage($originalUrl, $productId, $index);
+                        }
+                        
+                        $imgStmt->execute([
+                            $productId,
+                            $localUrl ?: $originalUrl,
+                            $image['is_primary'] ?? ($index === 0 ? 1 : 0),
+                            $image['sort_order'] ?? $index
+                        ]);
+                    }
+                }
+                
+                // Commit solo se tutto è andato bene
+                $pdo->commit();
+                $processed++;
+                
+            } catch (Exception $e) {
+                // Rollback solo se c'è una transazione attiva
+                if ($pdo->inTransaction()) {
+                    $pdo->rollback();
+                }
+                $failed++;
+                $errors[] = "Prodotto {$product['id']}: " . $e->getMessage();
+            }
+        }
+        
+        $durationMs = round((microtime(true) - $startTime) * 1000);
+        
+        jsonResponse([
+            'success' => true,
+            'data' => [
+                'total' => count($products),
+                'processed' => $processed,
+                'failed' => $failed,
+                'duration_ms' => $durationMs,
+                'errors' => $errors ?: null
+            ]
+        ]);
+                
+                // Gestione immagini
+                if (!empty($product['images']) && $productId) {
+                    // Rimuovi immagini esistenti
+                    $pdo->prepare("DELETE FROM product_images WHERE product_id = ?")->execute([$productId]);
+                    
+                    // Crea directory se non esiste
+                    $uploadDir = __DIR__ . '/../../uploads/products';
+                    if (!is_dir($uploadDir)) {
+                        mkdir($uploadDir, 0755, true);
+                    }
+                    
+                    // Inserisci nuove immagini
+                    $imgStmt = $pdo->prepare("
+                        INSERT INTO product_images (product_id, url, is_primary, sort_order) 
+                        VALUES (?, ?, ?, ?)
+                    ");
+                    
+                    foreach ($product['images'] as $index => $image) {
+                        $originalUrl = $image['url'] ?? '';
+                        $localUrl = $originalUrl;
+                        
+                        // Scarica immagine se è un URL di MazGest
                         if (!empty($originalUrl) && strpos($originalUrl, '/uploads/jewelry-products/') !== false) {
                             $localUrl = downloadImage($originalUrl, $productId, $index);
                         }
@@ -213,12 +311,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
                 
                 $pdo->commit();
+                $pdo->commit();
                 $processed++;
                 
             } catch (Exception $e) {
-                if ($pdo->inTransaction()) {
-                    $pdo->rollback();
-                }
+                $pdo->rollback();
                 $failed++;
                 $errors[] = "Prodotto {$product['id']}: " . $e->getMessage();
             }
@@ -240,7 +337,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } catch (Exception $e) {
         jsonResponse(['success' => false, 'error' => $e->getMessage()], 500);
     }
-}
 
+// Metodo non supportato
 jsonResponse(['success' => false, 'error' => 'Metodo non supportato'], 405);
 ?>
