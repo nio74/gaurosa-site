@@ -8,11 +8,11 @@ import { useCart } from '@/hooks/useCart';
 
 // Sottocategorie stabili dei Gioielli
 const navigation = [
-  { name: 'Anelli', href: '/prodotti?sottocategoria=anello' },
-  { name: 'Bracciali', href: '/prodotti?sottocategoria=bracciale' },
-  { name: 'Collane', href: '/prodotti?sottocategoria=collana' },
-  { name: 'Orecchini', href: '/prodotti?sottocategoria=orecchini' },
-  { name: 'Pendenti', href: '/prodotti?sottocategoria=pendente' },
+  { name: 'Anelli', href: '/prodotti?categoria=gioielli&sottocategoria=anello' },
+  { name: 'Bracciali', href: '/prodotti?categoria=gioielli&sottocategoria=bracciale' },
+  { name: 'Collane', href: '/prodotti?categoria=gioielli&sottocategoria=collana' },
+  { name: 'Orecchini', href: '/prodotti?categoria=gioielli&sottocategoria=orecchini' },
+  { name: 'Pendenti', href: '/prodotti?categoria=gioielli&sottocategoria=pendente' },
 ];
 
 export default function Header() {

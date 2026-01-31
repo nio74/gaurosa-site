@@ -76,8 +76,10 @@ function ProductsPageContent() {
             is_primary: img.is_primary,
             position: img.position,
           })),
-          stock: p.stock,
-          inStock: p.inStock,
+          stock: {
+            total: p.stock || 0,
+            available: p.inStock || false,
+          },
           variants: p.variants || [],
         }));
         setProducts(transformedProducts);
