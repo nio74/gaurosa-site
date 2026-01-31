@@ -3,9 +3,8 @@ import type { NextConfig } from "next";
 const isProd = process.env.NODE_ENV === 'production';
 
 const nextConfig: NextConfig = {
-  // Static Export SOLO in produzione (per Hostinger)
-  // In sviluppo: API routes funzionano normalmente
-  ...(isProd && { output: 'export' }),
+  // Static Export DISABILITATO - Hostinger usa API PHP
+  // ...(isProd && { output: 'export' }),
 
   // Disabilita ottimizzazione immagini (non supportata in static export)
   images: {
