@@ -57,7 +57,7 @@ function ProductsPageContent() {
       params.set('limit', '12');
       params.set('sort', sortBy);
 
-      const response = await fetch(`/api/products?${params.toString()}`);
+      const response = await fetch(`/api/products.php?${params.toString()}`);
       const data = await response.json();
 
       if (data.success) {
