@@ -14,18 +14,18 @@
 function getApiBaseUrl(): string {
   if (typeof window === 'undefined') {
     // Server-side rendering - usa produzione
-    return 'https://gaurosa.it/api';
+    return 'https://gaurosa.it';
   }
   
   const hostname = window.location.hostname;
   
   // Produzione
   if (hostname === 'gaurosa.it' || hostname === 'www.gaurosa.it') {
-    return '/api';
+    return '';
   }
   
   // Sviluppo locale - XAMPP
-  return 'http://localhost/gaurosa-site/api';
+  return 'http://localhost/gaurosa-site';
 }
 
 /**
@@ -76,14 +76,14 @@ export async function fetchProducts(params?: {
   if (params?.sort) queryParams.set('sort', params.sort);
   
   const query = queryParams.toString();
-  return apiFetch(`products.php${query ? '?' + query : ''}`);
+  return apiFetch(`api-products.php${query ? '?' + query : ''}`);
 }
 
 /**
  * Fetch singolo prodotto per codice
  */
 export async function fetchProduct(code: string) {
-  return apiFetch(`product.php?code=${encodeURIComponent(code)}`);
+  return apiFetch(`api-product.php?code=${encodeURIComponent(code)}`);
 }
 
 // ============================================
