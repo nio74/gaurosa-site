@@ -84,6 +84,12 @@ model Product {
   watchType     String? @map("watch_type") @db.VarChar(50) // analogico, digitale
   watchMovement String? @map("watch_movement") @db.VarChar(50) // quarzo, automatico
 
+  // === GENERE (per filtro unificato) ===
+  gender String? @db.VarChar(20) // uomo, donna, unisex, bambino
+
+  // === COLLEZIONE (per filtro) ===
+  collectionName String? @map("collection_name") @db.VarChar(100)
+
   // === CONDIZIONE ===
   itemCondition String? @default("nuovo") @map("item_condition") @db.VarChar(20)
 
@@ -103,9 +109,12 @@ model Product {
   syncedAt  DateTime? @map("synced_at")
 
   // === RELAZIONI ===
-  images     ProductImage[]
-  variants   ProductVariant[]
-  orderItems OrderItem[]
+  images        ProductImage[]
+  variants      ProductVariant[]
+  orderItems    OrderItem[]
+  collections   ProductCollection[]      // Collezioni del prodotto
+  variantGroups ProductVariantGroup[]    // Gruppi varianti virtuali
+  tags          ProductTag[]             // Tag prodotto
 
   @@index([mainCategory])
   @@index([subcategory])
@@ -117,6 +126,8 @@ model Product {
   @@index([isActive])
   @@index([slug])
   @@index([price])
+  @@index([gender])
+  @@index([collectionName])
   @@map("products")
 }
 
@@ -235,6 +246,174 @@ model FilterValue {
   @@index([attributeType])
   @@index([isActive])
   @@map("filter_values")
+}
+
+// ============================================
+// ATTRIBUTI PER FILTRI (Sistema strutturato)
+// ============================================
+
+model Attribute {
+  id          Int     @id @default(autoincrement())
+  code        String  @unique @db.VarChar(50)  // "material_primary", "ring_type"
+  label       String  @db.VarChar(100)         // "Materiale", "Tipo Anello"
+  slug        String  @unique @db.VarChar(100) // "materiale", "tipo-anello"
+  description String? @db.Text
+  
+  // Tipo filtro (per UI)
+  filterType  String  @map("filter_type") @db.VarChar(20)  // "checkbox", "range", "radio"
+  
+  // Configurazione UI
+  position    Int     @default(0)              // Ordine visualizzazione
+  icon        String? @db.VarChar(50)          // Icona FontAwesome (opzionale)
+  showInMenu  Boolean @default(true) @map("show_in_menu")
+  isActive    Boolean @default(true) @map("is_active")
+  
+  // Relazioni
+  values AttributeValue[]
+  
+  @@index([isActive])
+  @@index([position])
+  @@map("attributes")
+}
+
+model AttributeValue {
+  id          Int       @id @default(autoincrement())
+  attributeId Int       @map("attribute_id")
+  attribute   Attribute @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+  
+  code        String    @db.VarChar(100)      // Valore originale: "oro_750", "solitario"
+  label       String    @db.VarChar(100)      // Label UI: "Oro 750‰ 18K", "Solitario"
+  slug        String    @db.VarChar(100)      // URL-safe: "oro-750", "solitario"
+  description String?   @db.Text              // Descrizione estesa (opzionale)
+  
+  // Range filtro (solo per attributi numerici)
+  minValue    Decimal?  @map("min_value") @db.Decimal(10, 3)
+  maxValue    Decimal?  @map("max_value") @db.Decimal(10, 3)
+  
+  // Configurazione UI
+  color       String?   @db.VarChar(20)       // Hex color per swatch (es: materiale)
+  icon        String?   @db.VarChar(50)       // Icona specifica
+  sortOrder   Int       @default(0) @map("sort_order")
+  productCount Int      @default(0) @map("product_count")
+  isActive    Boolean   @default(true) @map("is_active")
+  
+  @@unique([attributeId, code])
+  @@index([attributeId])
+  @@index([isActive])
+  @@map("attribute_values")
+}
+
+// ============================================
+// COLLEZIONI (per filtro e marketing)
+// ============================================
+
+model Collection {
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(100)
+  slug        String   @unique @db.VarChar(100)
+  description String?  @db.Text
+  imageUrl    String?  @map("image_url") @db.VarChar(500)
+  
+  // Date validità (per collezioni stagionali)
+  startDate   DateTime? @map("start_date")
+  endDate     DateTime? @map("end_date")
+  
+  position    Int      @default(0)
+  isFeatured  Boolean  @default(false) @map("is_featured")
+  isActive    Boolean  @default(true) @map("is_active")
+  
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  
+  // Relazione con prodotti
+  products    ProductCollection[]
+  
+  @@index([isActive])
+  @@index([isFeatured])
+  @@map("collections")
+}
+
+model ProductCollection {
+  id           Int      @id @default(autoincrement())
+  productId    Int      @map("product_id")
+  collectionId Int      @map("collection_id")
+  
+  product      Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  
+  addedAt      DateTime @default(now()) @map("added_at")
+  
+  @@unique([productId, collectionId])
+  @@index([productId])
+  @@index([collectionId])
+  @@map("product_collections")
+}
+
+// ============================================
+// TAG (per filtri e marketing)
+// ============================================
+
+model Tag {
+  id           Int     @id @default(autoincrement())
+  code         String  @unique @db.VarChar(50)       // novita, offerta, fatto_a_mano
+  label        String  @db.VarChar(100)              // "Novità", "In Offerta"
+  slug         String  @unique @db.VarChar(100)      // novita, offerta
+  type         String  @db.VarChar(20)               // special, material, stone, style
+  description  String? @db.Text
+  
+  // Visual
+  color        String? @db.VarChar(20)               // Hex color per badge
+  icon         String? @db.VarChar(50)               // Emoji o classe icona
+  
+  // Ordinamento e conteggi
+  sortOrder    Int     @default(0) @map("sort_order")
+  productCount Int     @default(0) @map("product_count")
+  isActive     Boolean @default(true) @map("is_active")
+  
+  // Relazione con prodotti
+  products     ProductTag[]
+  
+  @@index([type])
+  @@index([isActive])
+  @@map("tags")
+}
+
+model ProductTag {
+  id        Int     @id @default(autoincrement())
+  productId Int     @map("product_id")
+  tagId     Int     @map("tag_id")
+  
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  
+  addedAt   DateTime @default(now()) @map("added_at")
+  
+  @@unique([productId, tagId])
+  @@index([productId])
+  @@index([tagId])
+  @@map("product_tags")
+}
+
+// ============================================
+// GRUPPI VARIANTI (per varianti virtuali)
+// ============================================
+
+model ProductVariantGroup {
+  id                  Int     @id @default(autoincrement())
+  productId           Int     @map("product_id")
+  product             Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  name                String  @db.VarChar(100)              // "Misure Disponibili"
+  attributeType       String  @map("attribute_type") @db.VarChar(50) // "size_ring_it"
+  
+  // Configurazione varianti virtuali
+  generateAllSizes    Boolean @default(false) @map("generate_all_sizes")
+  virtualPriceMarkup  Decimal @default(0) @map("virtual_price_markup") @db.Decimal(10, 2)
+  
+  isActive            Boolean @default(true) @map("is_active")
+  
+  @@index([productId])
+  @@map("product_variant_groups")
 }
 
 // ============================================

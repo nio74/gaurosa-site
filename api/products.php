@@ -6,52 +6,11 @@
  * Restituisce prodotti per il sito e-commerce
  */
 
-// CORS headers
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
-header('Content-Type: application/json');
+require_once __DIR__ . '/config.php';
 
+// Handle OPTIONS preflight
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    exit(0);
-}
-
-// Database config
-if (strpos($_SERVER['HTTP_HOST'] ?? '', 'localhost') !== false) {
-    // Locale
-    define('DB_HOST', 'localhost');
-    define('DB_NAME', 'gaurosasite');
-    define('DB_USER', 'root');
-    define('DB_PASS', '');
-} else {
-    // Hostinger
-    define('DB_HOST', 'localhost');
-    define('DB_NAME', 'u341208956_gaurosasito');
-    define('DB_USER', 'u341208956_paolo');
-    define('DB_PASS', '6#KvGR!d');
-}
-
-function jsonResponse($data, $status = 200) {
-    http_response_code($status);
-    echo json_encode($data);
-    exit;
-}
-
-function getDbConnection() {
-    try {
-        $pdo = new PDO(
-            "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4",
-            DB_USER,
-            DB_PASS,
-            [
-                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-            ]
-        );
-        return $pdo;
-    } catch (PDOException $e) {
-        jsonResponse(['success' => false, 'error' => 'Database connection failed'], 500);
-    }
+    jsonResponse(['success' => true]);
 }
 
 // GET: Lista prodotti
@@ -128,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $products = $stmt->fetchAll();
         
         // Count totale
-        $countSql = "SELECT COUNT(*) as total FROM products WHERE " . implode(' AND ', $where);
+        $countSql = "SELECT COUNT(*) as total FROM products p WHERE " . implode(' AND ', $where);
         $countStmt = $pdo->prepare($countSql);
         foreach ($params as $key => $value) {
             $countStmt->bindValue(':' . $key, $value);

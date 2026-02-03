@@ -7,15 +7,29 @@ import { Filter, ChevronDown, X, Loader2 } from 'lucide-react';
 import ProductCard from '@/components/products/ProductCard';
 import Button from '@/components/ui/Button';
 import { Product } from '@/types';
+import { fetchProducts, transformProduct } from '@/lib/api';
 
 // Labels per le categorie
 const categoryLabels: Record<string, string> = {
+  gioielli: 'Gioielli',
   gioielleria: 'Gioielli',
   orologi: 'Orologi',
   accessori: 'Accessori',
   oggettistica: 'Oggettistica',
   produzione_propria: 'Produzione Propria',
   carico_peso: 'Metalli Preziosi',
+};
+
+// Labels per le sottocategorie
+const subcategoryLabels: Record<string, string> = {
+  anello: 'Anelli',
+  bracciale: 'Bracciali',
+  collana: 'Collane',
+  orecchini: 'Orecchini',
+  pendente: 'Pendenti',
+  ciondolo: 'Ciondoli',
+  gemelli: 'Gemelli',
+  spilla: 'Spille',
 };
 
 // Opzioni ordinamento
@@ -44,44 +58,24 @@ function ProductsPageContent() {
   const sottocategoria = searchParams.get('sottocategoria') || '';
   const search = searchParams.get('search') || '';
 
-  // Fetch prodotti dal database locale gaurosasite
-  const fetchProducts = useCallback(async () => {
+  // Fetch prodotti dal database (usa API PHP in produzione, Next.js in sviluppo)
+  const loadProducts = useCallback(async () => {
     setLoading(true);
     try {
-      // Costruisci URL con parametri
-      const params = new URLSearchParams();
-      if (categoria) params.set('categoria', categoria);
-      if (sottocategoria) params.set('sottocategoria', sottocategoria);
-      if (search) params.set('search', search);
-      params.set('page', currentPage.toString());
-      params.set('limit', '12');
-      params.set('sort', sortBy);
-
-      const response = await fetch(`/api/products.php?${params.toString()}`);
-      const data = await response.json();
+      const data = await fetchProducts({
+        categoria: categoria || undefined,
+        sottocategoria: sottocategoria || undefined,
+        search: search || undefined,
+        page: currentPage,
+        limit: 12,
+        sort: sortBy,
+      });
 
       if (data.success) {
         // Trasforma i prodotti nel formato atteso dal frontend
-        const transformedProducts: Product[] = data.data.products.map((p: any) => ({
-          code: p.code,
-          ean: p.ean || '',
-          name: p.name,
-          description: p.description || '',
-          load_type: (p.category || 'gioielleria') as Product['load_type'],
-          macro_category: p.category || 'gioielli',
-          supplier: p.supplier || '',
-          price: p.price,
-          images: (p.images || []).map((img: any) => ({
-            url: img.url,
-            is_primary: img.is_primary,
-            position: img.position,
-          })),
-          stock: {
-            total: p.stock || 0,
-            available: p.inStock || false,
-          },
-          variants: p.variants || [],
-        }));
+        const transformedProducts: Product[] = data.data.products.map((p: any) => 
+          transformProduct(p) as Product
+        );
         setProducts(transformedProducts);
         setTotalProducts(data.data.pagination.total);
         setTotalPages(data.data.pagination.pages);
@@ -94,8 +88,8 @@ function ProductsPageContent() {
   }, [categoria, sottocategoria, search, currentPage, sortBy]);
 
   useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+    loadProducts();
+  }, [loadProducts]);
 
   // Gestisci cambio filtri
   const handleCategoryChange = (newCategory: string) => {
@@ -116,9 +110,11 @@ function ProductsPageContent() {
   };
 
   // Titolo pagina
-  const pageTitle = categoria
-    ? categoryLabels[categoria] || categoria
-    : 'Tutti i Prodotti';
+  const pageTitle = sottocategoria
+    ? subcategoryLabels[sottocategoria] || sottocategoria
+    : categoria
+      ? categoryLabels[categoria] || categoria
+      : 'Tutti i Prodotti';
 
   return (
     <div className="min-h-screen bg-gray-50">
