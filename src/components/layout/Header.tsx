@@ -6,13 +6,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, ShoppingBag, Search, User } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
 
-// Sottocategorie stabili dei Gioielli
+// Sottocategorie principali dei Gioielli (ordinate per quantità prodotti)
 const navigation = [
-  { name: 'Anelli', href: '/prodotti?categoria=gioielli&sottocategoria=anello' },
   { name: 'Bracciali', href: '/prodotti?categoria=gioielli&sottocategoria=bracciale' },
   { name: 'Collane', href: '/prodotti?categoria=gioielli&sottocategoria=collana' },
   { name: 'Orecchini', href: '/prodotti?categoria=gioielli&sottocategoria=orecchini' },
-  { name: 'Pendenti', href: '/prodotti?categoria=gioielli&sottocategoria=pendente' },
+  { name: 'Anelli', href: '/prodotti?categoria=gioielli&sottocategoria=anello' },
 ];
 
 export default function Header() {

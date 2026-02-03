@@ -13,9 +13,11 @@ export interface ProductImage {
 }
 
 export interface ProductVariant {
+  id?: number;
   sku: string;
-  size: string;
-  price: number;
+  name?: string | null;
+  size: string | null;
+  price: number | null;
   stock: number;
 }
 

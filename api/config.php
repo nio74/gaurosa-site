@@ -4,8 +4,11 @@
  */
 
 // Rileva ambiente
-$isLocal = ($_SERVER['HTTP_HOST'] ?? 'localhost') === 'localhost'
-        || strpos($_SERVER['HTTP_HOST'] ?? '', 'localhost') !== false;
+$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+$isLocal = $host === 'localhost' 
+        || strpos($host, 'localhost') !== false
+        || $host === '127.0.0.1'
+        || strpos($host, '127.0.0.1') !== false;
 define('IS_LOCAL', $isLocal);
 
 if ($isLocal) {
