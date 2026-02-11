@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -177,8 +178,14 @@ function formatAttributeValue(key: string, value: any): string {
   return String(value);
 }
 
-export default function ProductDetailClient({ code }: { code: string }) {
+export default function ProductDetailClient({ code: codeProp }: { code: string }) {
   const { addToCart } = useCart();
+  const pathname = usePathname();
+
+  // Read product code from URL (works with fallback shell routing on Hostinger)
+  // URL: /prodotti/M02627 → extract "M02627"
+  const codeFromUrl = pathname?.split('/').pop() || '';
+  const code = codeFromUrl || codeProp;
 
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [loading, setLoading] = useState(true);
