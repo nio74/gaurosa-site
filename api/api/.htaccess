@@ -1,0 +1,20 @@
+# API Routing per Gaurosa.it
+# Riscrive le richieste senza .php
+
+RewriteEngine On
+
+# Se il file richiesto esiste, servilo direttamente
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^ - [L]
+
+# Se la directory esiste, controlla index.php
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteCond %{REQUEST_FILENAME}/index.php -f
+RewriteRule ^(.*)$ $1/index.php [L]
+
+# Altrimenti aggiungi .php
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteRule ^(.*)$ $1.php [L]
+
+# CORS gestiti in PHP (config.php) per maggiore controllo
+# NON aggiungere header CORS qui per evitare duplicati

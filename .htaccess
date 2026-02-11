@@ -2,6 +2,11 @@
 RewriteEngine On
 RewriteBase /
 
+# Bypass diretto per API manutenzione e file maintenance
+RewriteRule ^api-maintenance\.php$ - [L]
+RewriteRule ^maintenance\.html$ - [L]
+RewriteRule ^maintenance\.json$ - [L]
+
 # Se il file esiste fisicamente, servilo
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteRule ^ - [L]

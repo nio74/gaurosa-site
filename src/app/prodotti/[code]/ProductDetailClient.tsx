@@ -50,7 +50,9 @@ interface ProductDetail {
     id: number;
     sku: string;
     name: string | null;
+    attribute_name: string | null;
     size: string | null;
+    is_virtual: boolean;
     price: number | null;
     stock: number;
   }>;
@@ -231,6 +233,26 @@ export default function ProductDetailClient({ code }: { code: string }) {
   const images = product.images.length > 0
     ? product.images
     : [{ url: '/images/placeholder-product.jpg', is_primary: true, position: 0 }];
+
+  // Variante attualmente selezionata
+  const activeVariant = selectedVariant
+    ? product.variants?.find(v => v.sku === selectedVariant)
+    : null;
+
+  // Prezzo attivo: variante selezionata > prezzo base prodotto
+  const activePrice = activeVariant?.price ?? product.price;
+
+  // Label adattiva per il selettore misure
+  const sizeLabel = (() => {
+    if (!product.variants || product.variants.length === 0) return '';
+    const attrName = product.variants[0]?.attribute_name;
+    if (attrName === 'Misura') return 'Seleziona misura';
+    if (attrName === 'Lunghezza (cm)') return 'Seleziona lunghezza';
+    return 'Seleziona taglia';
+  })();
+
+  // Verifica se ci sono varianti con prezzo diverso dal base
+  const hasVariantPricing = product.variants?.some(v => v.price !== null && v.price !== product.price) ?? false;
 
   const handleAddToCart = () => {
     // Costruisci oggetto Product compatibile con useCart
@@ -420,13 +442,21 @@ export default function ProductDetailClient({ code }: { code: string }) {
             {/* Price */}
             <div className="mt-6 flex items-baseline gap-3">
               <p className="text-3xl font-bold text-gray-900">
-                {formatPrice(product.price)}
+                {formatPrice(activePrice)}
               </p>
-              {product.compare_at_price && product.compare_at_price > product.price && (
+              {/* Show base price struck through if variant has different price */}
+              {activeVariant && activeVariant.price !== null && activeVariant.price !== product.price && (
+                <p className="text-xl text-gray-400 line-through">
+                  {formatPrice(product.price)}
+                </p>
+              )}
+              {/* Show compare_at_price if no variant override */}
+              {!activeVariant && product.compare_at_price && product.compare_at_price > product.price && (
                 <p className="text-xl text-gray-400 line-through">
                   {formatPrice(product.compare_at_price)}
                 </p>
               )}
+
             </div>
 
             {/* Description */}
@@ -442,25 +472,46 @@ export default function ProductDetailClient({ code }: { code: string }) {
             {/* Variants */}
             {product.variants && product.variants.length > 0 && (
               <div className="mt-6">
-                <h3 className="font-semibold text-gray-900 mb-3">Seleziona taglia</h3>
-                <div className="flex flex-wrap gap-2">
-                  {product.variants.map((variant) => (
-                    <button
-                      key={variant.sku}
-                      onClick={() => setSelectedVariant(variant.sku || null)}
-                      disabled={variant.stock === 0}
-                      className={`px-4 py-2 border rounded-lg transition-colors ${
-                        selectedVariant === variant.sku
-                          ? 'border-black bg-black text-white'
-                          : variant.stock > 0
-                          ? 'border-gray-200 hover:border-gray-400'
-                          : 'border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed'
-                      }`}
-                    >
-                      {variant.name || variant.size || variant.sku}
-                    </button>
-                  ))}
+                <div className="flex items-center gap-3 mb-3">
+                  <h3 className="font-semibold text-gray-900">{sizeLabel}</h3>
+                  {hasVariantPricing && (
+                    <span className="text-xs text-gray-500">
+                      Il prezzo varia in base alla misura
+                    </span>
+                  )}
                 </div>
+                <div className="flex flex-wrap gap-2">
+                  {product.variants.map((variant) => {
+                    const isSelected = selectedVariant === variant.sku;
+                    const isDisabled = variant.stock === 0;
+                    const showPrice = hasVariantPricing && variant.price !== null && variant.price !== product.price;
+
+                    return (
+                      <button
+                        key={variant.sku}
+                        onClick={() => setSelectedVariant(isSelected ? null : (variant.sku || null))}
+                        disabled={isDisabled}
+                        className={`relative px-4 py-2 border rounded-lg transition-all ${
+                          isSelected
+                            ? 'border-black bg-black text-white ring-1 ring-black'
+                            : isDisabled
+                            ? 'border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed'
+                            : 'border-gray-200 hover:border-gray-400 text-gray-900'
+                        }`}
+                      >
+                        <span className="text-sm font-medium">
+                          {variant.size || variant.name || variant.sku}
+                        </span>
+                        {showPrice && !isSelected && (
+                          <span className="block text-[10px] text-gray-400 mt-0.5">
+                            {formatPrice(variant.price!)}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
               </div>
             )}
 
@@ -469,11 +520,16 @@ export default function ProductDetailClient({ code }: { code: string }) {
               <Button
                 size="lg"
                 onClick={handleAddToCart}
-                disabled={!product.stock.available}
+                disabled={!product.stock.available || (product.variants && product.variants.length > 0 && !selectedVariant)}
                 className="flex-1"
               >
                 <ShoppingCart className="w-5 h-5 mr-2" />
-                {product.stock.available ? 'Aggiungi al carrello' : 'Non disponibile'}
+                {!product.stock.available
+                  ? 'Non disponibile'
+                  : product.variants && product.variants.length > 0 && !selectedVariant
+                  ? 'Seleziona una misura'
+                  : 'Aggiungi al carrello'
+                }
               </Button>
               <Button variant="outline" size="lg" className="px-4">
                 <Heart className="w-5 h-5" />

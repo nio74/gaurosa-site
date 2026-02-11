@@ -10,7 +10,7 @@ const categories = [
   {
     name: 'Gioielli',
     description: 'Collane, anelli, bracciali e orecchini',
-    href: '/prodotti?categoria=gioielleria',
+    href: '/prodotti',
   },
   {
     name: 'Orologi',

@@ -118,7 +118,9 @@ try {
                 'id' => (int)$v['id'],
                 'sku' => $v['sku'],
                 'name' => $v['name'],
+                'attribute_name' => $v['attribute_name'],
                 'size' => $v['attribute_value'],
+                'is_virtual' => (bool)$v['is_virtual'],
                 'price' => $v['price'] ? (float)$v['price'] : null,
                 'stock' => (int)$v['stock'],
             ];

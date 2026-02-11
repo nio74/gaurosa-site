@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="refresh" content="300">
+    <title>Sito in Manutenzione - Gaurosa Gioielli</title>
+    <meta name="description" content="Gaurosa Gioielli - Sito temporaneamente in manutenzione">
+    <link rel="icon" href="/favicon.ico">
+    
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', Arial, Helvetica, sans-serif;
+            background: linear-gradient(135deg, #111827 0%, #1f2937 50%, #111827 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            overflow-x: hidden;
+        }
+
+        .container {
+            text-align: center;
+            padding: 2rem;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .logo {
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            background: linear-gradient(135deg, #fde68a 0%, #fbbf24 100%);
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 3rem;
+            animation: logoGlow 3s ease-in-out infinite alternate;
+        }
+
+        @keyframes logoGlow {
+            0% {
+                filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.3));
+            }
+            100% {
+                filter: drop-shadow(0 0 20px rgba(251, 191, 36, 0.6));
+            }
+        }
+
+        .maintenance-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 2rem;
+            opacity: 0.8;
+            animation: rotate 8s linear infinite;
+        }
+
+        @keyframes rotate {
+            from {
+                transform: rotate(0deg);
+            }
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .maintenance-icon svg {
+            width: 100%;
+            height: 100%;
+            fill: #fbbf24;
+            filter: drop-shadow(0 0 8px rgba(251, 191, 36, 0.4));
+        }
+
+        h1 {
+            font-size: 2.25rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: white;
+        }
+
+        .message {
+            font-size: 1.125rem;
+            color: #d1d5db;
+            line-height: 1.6;
+            margin-bottom: 2.5rem;
+            font-weight: 300;
+        }
+
+        .contact {
+            font-size: 1rem;
+            color: #9ca3af;
+            margin-bottom: 3rem;
+        }
+
+        .contact a {
+            color: #fbbf24;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .contact a:hover {
+            color: #fde68a;
+            text-decoration: underline;
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #111827;
+            padding: 1rem;
+            text-align: center;
+            font-size: 0.875rem;
+            color: #6b7280;
+            border-top: 1px solid #374151;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1.5rem;
+            }
+
+            .logo {
+                font-size: 2rem;
+                margin-bottom: 2rem;
+            }
+
+            h1 {
+                font-size: 1.875rem;
+                margin-bottom: 1rem;
+            }
+
+            .message {
+                font-size: 1rem;
+                margin-bottom: 2rem;
+            }
+
+            .maintenance-icon {
+                width: 60px;
+                height: 60px;
+                margin-bottom: 1.5rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .logo {
+                font-size: 1.75rem;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .message {
+                font-size: 0.9rem;
+            }
+
+            .footer {
+                padding: 0.75rem;
+                font-size: 0.8rem;
+            }
+        }
+
+        /* Subtle background animation */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 20% 80%, rgba(251, 191, 36, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(251, 191, 36, 0.08) 0%, transparent 50%);
+            animation: backgroundShift 10s ease-in-out infinite alternate;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        @keyframes backgroundShift {
+            0% {
+                opacity: 0.3;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 0.6;
+                transform: scale(1.1);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Logo Gaurosa -->
+        <div class="logo">GAUROSA</div>
+        
+        <!-- Icona Manutenzione -->
+        <div class="maintenance-icon">
+            <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L19 6V4C19 3.45 18.55 3 18 3S17 3.45 17 4V6L15 7V9C15 9.55 15.45 10 16 10S17 9.55 17 9V8L18 7.5L19 8V9C19 9.55 19.45 10 20 10S21 9.55 21 9ZM9 7L7 6V4C7 3.45 6.55 3 6 3S5 3.45 5 4V6L3 7V9C3 9.55 3.45 10 4 10S5 9.55 5 9V8L6 7.5L7 8V9C7 9.55 7.45 10 8 10S9 9.55 9 9V7ZM12 8C14.21 8 16 9.79 16 12C16 14.21 14.21 16 12 16C9.79 16 8 14.21 8 12C8 9.79 9.79 8 12 8ZM12 10C10.9 10 10 10.9 10 12C10 13.1 10.9 14 12 14C13.1 14 14 13.1 14 12C14 10.9 13.1 10 12 10ZM21 15V17L19 18V20C19 20.55 18.55 21 18 21S17 20.55 17 20V18L15 17V15C15 14.45 15.45 14 16 14S17 14.45 17 15V16L18 16.5L19 16V15C19 14.45 19.45 14 20 14S21 14.45 21 15ZM9 17L7 18V20C7 20.55 6.55 21 6 21S5 20.55 5 20V18L3 17V15C3 14.45 3.45 14 4 14S5 14.45 5 15V16L6 16.5L7 16V15C7 14.45 7.45 14 8 14S9 14.45 9 15V17ZM12 18C10.9 18 10 18.9 10 20C10 21.1 10.9 22 12 22C13.1 22 14 21.1 14 20C14 18.9 13.1 18 12 18Z"/>
+            </svg>
+        </div>
+        
+        <!-- Titolo -->
+        <h1>Sito in Manutenzione</h1>
+        
+        <!-- Messaggio -->
+        <p class="message">
+            Stiamo lavorando per migliorare la vostra esperienza.<br>
+            Torneremo presto con novità.
+        </p>
+        
+        <!-- Contatti -->
+        <p class="contact">
+            Per informazioni: <a href="mailto:info@gaurosa.it">info@gaurosa.it</a>
+        </p>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="footer">
+        Gaurosa Gioielli
+    </footer>
+</body>
+</html>

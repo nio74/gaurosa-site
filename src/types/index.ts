@@ -2,6 +2,8 @@
  * Tipi condivisi per il sito gaurosa.it
  */
 
+import type { FC } from 'react';
+
 // ============================================
 // PRODOTTI
 // ============================================
@@ -16,7 +18,9 @@ export interface ProductVariant {
   id?: number;
   sku: string;
   name?: string | null;
+  attribute_name?: string | null;
   size: string | null;
+  is_virtual?: boolean;
   price: number | null;
   stock: number;
 }
@@ -28,14 +32,19 @@ export interface Product {
   description: string;
   load_type: ProductLoadType;
   macro_category: string;
+  subcategory?: string;
   supplier: string;
+  brand?: string;
   price: number;
+  compare_at_price?: number | null;
   images: ProductImage[];
   stock: {
     total: number;
     available: boolean;
   };
   variants?: ProductVariant[];
+  tags?: ProductTag[];
+  attributes?: Record<string, string | number | null>;
 }
 
 export type ProductLoadType =
@@ -45,6 +54,56 @@ export type ProductLoadType =
   | 'accessori'
   | 'produzione_propria'
   | 'carico_peso';
+
+export interface ProductTag {
+  code: string;
+  label: string;
+  color?: string;
+  icon?: string;
+}
+
+// ============================================
+// FILTRI
+// ============================================
+
+export interface FilterValue {
+  value: string;
+  label?: string;
+  count: number;
+  color?: string;   // For color swatches
+  icon?: string;     // For tag icons
+}
+
+export interface Filter {
+  code: string;
+  label: string;
+  type: 'checkbox' | 'color' | 'tag' | 'range';
+  values: FilterValue[];
+}
+
+export interface PriceRange {
+  min: number;
+  max: number;
+  avg: number;
+}
+
+export interface FiltersResponse {
+  filters: Filter[];
+  price_range: PriceRange;
+  total_filtered: number;
+}
+
+/** Active filter selections (key = filter code, value = selected values) */
+export interface ActiveFilters {
+  sottocategoria?: string[];
+  material?: string[];
+  material_color?: string[];
+  gender?: string[];
+  stone_type?: string[];
+  tag?: string[];
+  price_min?: number;
+  price_max?: number;
+}
 
 // ============================================
 // CARRELLO
@@ -134,7 +193,7 @@ export interface Order {
 export interface NavigationItem {
   label: string;
   href: string;
-  icon?: React.ComponentType;
+  icon?: FC;
 }
 
 export interface BreadcrumbItem {
