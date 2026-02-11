@@ -6,6 +6,8 @@
  * - Produzione: https://gaurosa.it/api/
  */
 
+import type { ActiveFilters } from '@/types';
+
 /**
  * Base URL delle API PHP
  * - In locale (Next.js dev): chiama XAMPP
@@ -56,7 +58,7 @@ async function apiFetch(endpoint: string, options?: RequestInit) {
 // ============================================
 
 /**
- * Fetch lista prodotti
+ * Fetch lista prodotti con filtri avanzati
  */
 export async function fetchProducts(params?: {
   categoria?: string;
@@ -65,6 +67,14 @@ export async function fetchProducts(params?: {
   page?: number;
   limit?: number;
   sort?: string;
+  // Filtri avanzati
+  material?: string;
+  material_color?: string;
+  stone_type?: string;
+  gender?: string;
+  price_min?: number;
+  price_max?: number;
+  tag?: string;
 }) {
   const queryParams = new URLSearchParams();
   
@@ -75,6 +85,19 @@ export async function fetchProducts(params?: {
   if (params?.limit) queryParams.set('limit', params.limit.toString());
   if (params?.sort) queryParams.set('sort', params.sort);
   
+  // Filtri avanzati
+  if (params?.material) queryParams.set('material', params.material);
+  if (params?.material_color) queryParams.set('material_color', params.material_color);
+  if (params?.stone_type) queryParams.set('stone_type', params.stone_type);
+  if (params?.gender) queryParams.set('gender', params.gender);
+  if (params?.price_min !== undefined && params?.price_min !== null) {
+    queryParams.set('price_min', params.price_min.toString());
+  }
+  if (params?.price_max !== undefined && params?.price_max !== null) {
+    queryParams.set('price_max', params.price_max.toString());
+  }
+  if (params?.tag) queryParams.set('tag', params.tag);
+  
   const query = queryParams.toString();
   return apiFetch(`api-products.php${query ? '?' + query : ''}`);
 }
@@ -84,6 +107,46 @@ export async function fetchProducts(params?: {
  */
 export async function fetchProduct(code: string) {
   return apiFetch(`api-product.php?code=${encodeURIComponent(code)}`);
+}
+
+// ============================================
+// FILTRI
+// ============================================
+
+/**
+ * Fetch filtri disponibili con conteggi contestuali
+ * Passa i filtri attivi per ottenere conteggi aggiornati
+ */
+export async function fetchFilters(activeFilters?: ActiveFilters) {
+  const queryParams = new URLSearchParams();
+  
+  if (activeFilters?.sottocategoria?.length) {
+    queryParams.set('sottocategoria', activeFilters.sottocategoria.join(','));
+  }
+  if (activeFilters?.material?.length) {
+    queryParams.set('material', activeFilters.material.join(','));
+  }
+  if (activeFilters?.material_color?.length) {
+    queryParams.set('material_color', activeFilters.material_color.join(','));
+  }
+  if (activeFilters?.stone_type?.length) {
+    queryParams.set('stone_type', activeFilters.stone_type.join(','));
+  }
+  if (activeFilters?.gender?.length) {
+    queryParams.set('gender', activeFilters.gender.join(','));
+  }
+  if (activeFilters?.tag?.length) {
+    queryParams.set('tag', activeFilters.tag.join(','));
+  }
+  if (activeFilters?.price_min !== undefined && activeFilters?.price_min !== null) {
+    queryParams.set('price_min', activeFilters.price_min.toString());
+  }
+  if (activeFilters?.price_max !== undefined && activeFilters?.price_max !== null) {
+    queryParams.set('price_max', activeFilters.price_max.toString());
+  }
+  
+  const query = queryParams.toString();
+  return apiFetch(`api-filters.php${query ? '?' + query : ''}`);
 }
 
 // ============================================
@@ -105,7 +168,7 @@ export function transformProduct(p: any) {
     supplier: p.supplier || '',
     brand: p.brand || '',
     price: Number(p.price) || 0,
-    compare_at_price: p.compare_at_price ? Number(p.compare_at_price) : null,
+    compare_at_price: p.compareAtPrice ? Number(p.compareAtPrice) : null,
     images: (p.images || []).map((img: any) => ({
       url: img.url,
       is_primary: Boolean(img.is_primary),
@@ -122,7 +185,7 @@ export function transformProduct(p: any) {
 }
 
 // ============================================
-// AUTENTICAZIONE (TODO: implementare)
+// AUTENTICAZIONE
 // ============================================
 
 export async function login(email: string, password: string) {
@@ -153,7 +216,7 @@ export async function getMe() {
 }
 
 // ============================================
-// CARRELLO (TODO: implementare)
+// CARRELLO
 // ============================================
 
 export async function getCart() {

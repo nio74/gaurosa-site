@@ -174,6 +174,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     pearl_type, pearl_size_mm, pearl_color,
                     size_ring_it, size_bracelet_cm, size_necklace_cm, size_earring_mm,
                     ring_type, ring_style, earring_type, bracelet_type, necklace_type, pendant_type,
+                    gender,
                     watch_gender, watch_type, watch_movement,
                     item_condition,
                     seo_title, seo_description,
@@ -190,6 +191,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     :pearl_type, :pearl_size_mm, :pearl_color,
                     :size_ring_it, :size_bracelet_cm, :size_necklace_cm, :size_earring_mm,
                     :ring_type, :ring_style, :earring_type, :bracelet_type, :necklace_type, :pendant_type,
+                    :gender,
                     :watch_gender, :watch_type, :watch_movement,
                     :item_condition,
                     :seo_title, :seo_description,
@@ -235,6 +237,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     bracelet_type = VALUES(bracelet_type),
                     necklace_type = VALUES(necklace_type),
                     pendant_type = VALUES(pendant_type),
+                    gender = VALUES(gender),
                     watch_gender = VALUES(watch_gender),
                     watch_type = VALUES(watch_type),
                     watch_movement = VALUES(watch_movement),
@@ -254,7 +257,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':code' => $product['code'],
                 ':ean' => $product['ean_code'] ?? null,
                 ':name' => $product['name'],
-                ':slug' => strtolower(str_replace(' ', '-', $product['name'] ?? $product['code'])),
+                ':slug' => strtolower(preg_replace('/[^a-z0-9]+/', '-', ($product['name'] ?? '') . '-' . $product['code'])),
                 ':description' => $product['description'] ?? null,
                 ':load_type' => $product['load_type'] ?? null,
                 ':main_category' => $product['main_category'] ?? null,
@@ -289,6 +292,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':bracelet_type' => $product['bracelet_type'] ?? null,
                 ':necklace_type' => $product['necklace_type'] ?? null,
                 ':pendant_type' => $product['pendant_type'] ?? null,
+                ':gender' => $product['gender'] ?? null,
                 ':watch_gender' => $product['watch_gender'] ?? null,
                 ':watch_type' => $product['watch_type'] ?? null,
                 ':watch_movement' => $product['watch_movement'] ?? null,
@@ -314,6 +318,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             updateFilterValue($pdo, 'material_color', $product['material_color'] ?? null);
             updateFilterValue($pdo, 'stone_main_type', $product['stone_main_type'] ?? null);
             updateFilterValue($pdo, 'ring_type', $product['ring_type'] ?? null);
+            updateFilterValue($pdo, 'gender', $product['gender'] ?? null);
             updateFilterValue($pdo, 'watch_gender', $product['watch_gender'] ?? null);
             updateFilterValue($pdo, 'item_condition', $product['item_condition'] ?? null);
 

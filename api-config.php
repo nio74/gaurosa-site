@@ -45,7 +45,7 @@ define('EMAIL_FROM', 'noreplay@gaurosa.it');
 define('EMAIL_FROM_NAME', 'Gaurosa Gioielli');
 
 // Site URL
-define('SITE_URL', $isLocal ? 'http://localhost:3001' : 'https://gaurosa.it');
+define('SITE_URL', $isLocal ? 'http://localhost:3003' : 'https://gaurosa.it');
 
 /**
  * Connessione PDO al database
@@ -84,7 +84,8 @@ function jsonResponse($data, $statusCode = 200) {
         'https://gaurosa.it',
         'https://www.gaurosa.it',
         'http://localhost:3000',
-        'http://localhost:3001'
+        'http://localhost:3001',
+        'http://localhost:3003'
     ];
 
     if (in_array($origin, $allowedOrigins)) {

@@ -1,18 +1,19 @@
 import Link from 'next/link';
-import { Instagram, Facebook, Mail, Phone, MapPin } from 'lucide-react';
+import { Instagram, Facebook, Youtube, Mail, Phone, MapPin, MessageCircle } from 'lucide-react';
 
 const footerLinks = {
   shop: [
-    { name: 'Gioielli', href: '/prodotti?categoria=gioielleria' },
-    { name: 'Orologi', href: '/prodotti?categoria=orologi' },
-    { name: 'Accessori', href: '/prodotti?categoria=accessori' },
-    { name: 'Novità', href: '/prodotti?sort=newest' },
+    { name: 'Tutti i Prodotti', href: '/prodotti' },
+    { name: 'Anelli', href: '/prodotti?sottocategoria=anello' },
+    { name: 'Bracciali', href: '/prodotti?sottocategoria=bracciale' },
+    { name: 'Collane', href: '/prodotti?sottocategoria=collana' },
+    { name: 'Orecchini', href: '/prodotti?sottocategoria=orecchini' },
   ],
   info: [
     { name: 'Chi Siamo', href: '/chi-siamo' },
     { name: 'Contatti', href: '/contatti' },
     { name: 'Spedizioni', href: '/spedizioni' },
-    { name: 'Resi e Rimborsi', href: '/resi' },
+    { name: 'Resi e Garanzia', href: '/resi' },
   ],
   legal: [
     { name: 'Privacy Policy', href: '/privacy' },
@@ -20,6 +21,13 @@ const footerLinks = {
     { name: 'Cookie Policy', href: '/cookie' },
   ],
 };
+
+const socialLinks = [
+  { icon: Instagram, href: 'https://www.instagram.com/gaurosaofficial/', label: 'Instagram' },
+  { icon: Facebook, href: 'https://www.facebook.com/gaurosaofficial', label: 'Facebook' },
+  { icon: Youtube, href: 'https://www.youtube.com/@gaurosamadeinitaly4556', label: 'YouTube' },
+  { icon: MessageCircle, href: 'https://wa.me/+393926191199', label: 'WhatsApp' },
+];
 
 export default function Footer() {
   const currentYear = new Date().getFullYear();
@@ -32,25 +40,22 @@ export default function Footer() {
           <div className="space-y-4">
             <h2 className="text-2xl font-bold text-white tracking-tight">GAUROSA</h2>
             <p className="text-sm text-gray-400 max-w-xs">
-              Gioielli e orologi selezionati con cura. Qualità, eleganza e passione dal 1990.
+              Gioielli artigianali di qualità, realizzati a mano con passione. 
+              Dal produttore al consumatore dal 1960.
             </p>
-            <div className="flex gap-4">
-              <a
-                href="https://instagram.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-2 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors"
-              >
-                <Instagram className="w-5 h-5" />
-              </a>
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="p-2 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors"
-              >
-                <Facebook className="w-5 h-5" />
-              </a>
+            <div className="flex gap-3">
+              {socialLinks.map((social) => (
+                <a
+                  key={social.label}
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={social.label}
+                  className="p-2 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors"
+                >
+                  <social.icon className="w-5 h-5" />
+                </a>
+              ))}
             </div>
           </div>
 
@@ -98,17 +103,17 @@ export default function Footer() {
               Contatti
             </h3>
             <ul className="space-y-3">
-              <li className="flex items-center gap-2 text-sm">
-                <MapPin className="w-4 h-4 flex-shrink-0" />
-                <span>Via Roma 123, 35010 Padova</span>
+              <li className="flex items-start gap-2 text-sm">
+                <MapPin className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <span>Via Don G. Carrara, 19<br />35010 Villa del Conte (PD)</span>
               </li>
               <li>
                 <a
-                  href="tel:+390491234567"
+                  href="tel:+393926191199"
                   className="flex items-center gap-2 text-sm hover:text-white transition-colors"
                 >
                   <Phone className="w-4 h-4" />
-                  <span>+39 049 123 4567</span>
+                  <span>+39 392 619 1199</span>
                 </a>
               </li>
               <li>
@@ -121,24 +126,36 @@ export default function Footer() {
                 </a>
               </li>
             </ul>
+            <div className="mt-4 pt-3 border-t border-gray-800">
+              <p className="text-xs text-gray-500">
+                Lun - Sab: 9:00 - 12:30 | 15:30 - 19:30
+              </p>
+            </div>
           </div>
         </div>
 
         {/* Bottom */}
-        <div className="mt-12 pt-8 border-t border-gray-800 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <p className="text-sm text-gray-400">
-            © {currentYear} Gaurosa. Tutti i diritti riservati.
-          </p>
-          <div className="flex gap-6">
-            {footerLinks.legal.map((link) => (
-              <Link
-                key={link.name}
-                href={link.href}
-                className="text-xs text-gray-400 hover:text-white transition-colors"
-              >
-                {link.name}
-              </Link>
-            ))}
+        <div className="mt-12 pt-8 border-t border-gray-800">
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div className="text-center sm:text-left">
+              <p className="text-sm text-gray-400">
+                &copy; {currentYear} Gaurosa - marchio di proprietà della Mazzon Gioielli S.N.C.
+              </p>
+              <p className="text-xs text-gray-500 mt-1">
+                P.IVA IT05120880280 | Via Don G. Carrara, 19 - 35010 Villa del Conte (PD) - Italia
+              </p>
+            </div>
+            <div className="flex gap-6">
+              {footerLinks.legal.map((link) => (
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  className="text-xs text-gray-400 hover:text-white transition-colors"
+                >
+                  {link.name}
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       </div>

@@ -1,24 +1,14 @@
 'use client';
 
-import { useEffect, useState, useCallback, Suspense } from 'react';
+import { useEffect, useState, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Filter, ChevronDown, X, Loader2 } from 'lucide-react';
+import { Filter as FilterIcon, ChevronDown, Loader2, SlidersHorizontal, Search, X } from 'lucide-react';
 import ProductCard from '@/components/products/ProductCard';
+import ProductFilters, { MobileFiltersDrawer } from '@/components/products/ProductFilters';
 import Button from '@/components/ui/Button';
-import { Product } from '@/types';
-import { fetchProducts, transformProduct } from '@/lib/api';
-
-// Labels per le categorie
-const categoryLabels: Record<string, string> = {
-  gioielli: 'Gioielli',
-  gioielleria: 'Gioielli',
-  orologi: 'Orologi',
-  accessori: 'Accessori',
-  oggettistica: 'Oggettistica',
-  produzione_propria: 'Produzione Propria',
-  carico_peso: 'Metalli Preziosi',
-};
+import { Product, ActiveFilters, Filter, PriceRange } from '@/types';
+import { fetchProducts, fetchFilters, transformProduct } from '@/lib/api';
 
 // Labels per le sottocategorie
 const subcategoryLabels: Record<string, string> = {
@@ -34,88 +24,212 @@ const subcategoryLabels: Record<string, string> = {
 
 // Opzioni ordinamento
 const sortOptions = [
-  { value: 'newest', label: 'Novità' },
-  { value: 'price_asc', label: 'Prezzo: dal più basso' },
-  { value: 'price_desc', label: 'Prezzo: dal più alto' },
+  { value: 'newest', label: 'Novita' },
+  { value: 'price_asc', label: 'Prezzo: dal piu basso' },
+  { value: 'price_desc', label: 'Prezzo: dal piu alto' },
   { value: 'name_asc', label: 'Nome: A-Z' },
 ];
+
+// ============================================
+// MAIN PAGE CONTENT
+// ============================================
 
 function ProductsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  // Stati
+  // ============================================
+  // STATE
+  // ============================================
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filtersLoading, setFiltersLoading] = useState(true);
   const [totalProducts, setTotalProducts] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [showFilters, setShowFilters] = useState(false);
-  const [sortBy, setSortBy] = useState('newest');
+  const [sortBy, setSortBy] = useState(searchParams.get('sort') || 'newest');
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-  // Parametri URL
-  const categoria = searchParams.get('categoria') || '';
+  // Sidebar filters (material, color, stone, gender, tag, price)
+  const [sidebarFilters, setSidebarFilters] = useState<ActiveFilters>({});
+
+  // Available filter options from API
+  const [availableFilters, setAvailableFilters] = useState<Filter[]>([]);
+  const [priceRange, setPriceRange] = useState<PriceRange>({ min: 0, max: 10000, avg: 500 });
+
+  // URL-driven params (from header nav / search)
   const sottocategoria = searchParams.get('sottocategoria') || '';
+  const categoria = searchParams.get('categoria') || '';
   const search = searchParams.get('search') || '';
 
-  // Fetch prodotti dal database (usa API PHP in produzione, Next.js in sviluppo)
-  const loadProducts = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await fetchProducts({
-        categoria: categoria || undefined,
-        sottocategoria: sottocategoria || undefined,
-        search: search || undefined,
-        page: currentPage,
-        limit: 12,
-        sort: sortBy,
-      });
+  // Track URL changes to reset sidebar filters
+  const searchParamsString = searchParams.toString();
+  const prevUrlRef = useRef(searchParamsString);
 
-      if (data.success) {
-        // Trasforma i prodotti nel formato atteso dal frontend
-        const transformedProducts: Product[] = data.data.products.map((p: any) => 
-          transformProduct(p) as Product
-        );
-        setProducts(transformedProducts);
-        setTotalProducts(data.data.pagination.total);
-        setTotalPages(data.data.pagination.pages);
-      }
-    } catch (error) {
-      console.error('Errore caricamento prodotti:', error);
-    } finally {
-      setLoading(false);
+  // A counter that increments every time we want to re-fetch
+  const [fetchTrigger, setFetchTrigger] = useState(0);
+
+  // ============================================
+  // RESET sidebar filters when URL changes (header nav / search)
+  // ============================================
+  useEffect(() => {
+    if (searchParamsString !== prevUrlRef.current) {
+      prevUrlRef.current = searchParamsString;
+      setSidebarFilters({});
+      setCurrentPage(1);
+      setSortBy(searchParams.get('sort') || 'newest');
+      // Trigger a new fetch
+      setFetchTrigger(t => t + 1);
     }
-  }, [categoria, sottocategoria, search, currentPage, sortBy]);
+  }, [searchParamsString]);
+
+  // ============================================
+  // FETCH PRODUCTS - triggered by fetchTrigger
+  // Uses refs to always read latest state
+  // ============================================
+  const sidebarFiltersRef = useRef(sidebarFilters);
+  sidebarFiltersRef.current = sidebarFilters;
+  const currentPageRef = useRef(currentPage);
+  currentPageRef.current = currentPage;
+  const sortByRef = useRef(sortBy);
+  sortByRef.current = sortBy;
 
   useEffect(() => {
-    loadProducts();
-  }, [loadProducts]);
+    let cancelled = false;
 
-  // Gestisci cambio filtri
-  const handleCategoryChange = (newCategory: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (newCategory) {
-      params.set('categoria', newCategory);
-    } else {
-      params.delete('categoria');
+    async function doFetch() {
+      const filters = sidebarFiltersRef.current;
+      const page = currentPageRef.current;
+      const sort = sortByRef.current;
+
+      console.log('📦 Fetching products:', { sottocategoria, search, filters, page, sort });
+      setLoading(true);
+
+      try {
+        const data = await fetchProducts({
+          categoria: categoria || undefined,
+          sottocategoria: sottocategoria || undefined,
+          search: search || undefined,
+          page,
+          limit: 12,
+          sort,
+          material: filters.material?.join(',') || undefined,
+          material_color: filters.material_color?.join(',') || undefined,
+          stone_type: filters.stone_type?.join(',') || undefined,
+          gender: filters.gender?.join(',') || undefined,
+          price_min: filters.price_min,
+          price_max: filters.price_max,
+          tag: filters.tag?.join(',') || undefined,
+        });
+
+        if (!cancelled && data.success) {
+          const transformedProducts: Product[] = data.data.products.map((p: any) =>
+            transformProduct(p) as Product
+          );
+          setProducts(transformedProducts);
+          setTotalProducts(data.data.pagination.total);
+          setTotalPages(data.data.pagination.pages);
+        }
+      } catch (error) {
+        console.error('Errore caricamento prodotti:', error);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     }
-    params.delete('sottocategoria');
-    router.push(`/prodotti?${params.toString()}`);
-    setCurrentPage(1);
-  };
 
-  const handleClearFilters = () => {
-    router.push('/prodotti');
-    setCurrentPage(1);
-  };
+    doFetch();
+    return () => { cancelled = true; };
+  }, [fetchTrigger, sottocategoria, categoria, search]);
 
-  // Titolo pagina
-  const pageTitle = sottocategoria
-    ? subcategoryLabels[sottocategoria] || sottocategoria
-    : categoria
-      ? categoryLabels[categoria] || categoria
+  // ============================================
+  // FETCH FILTERS
+  // ============================================
+  useEffect(() => {
+    let cancelled = false;
+
+    async function doFetchFilters() {
+      try {
+        setFiltersLoading(true);
+        const contextFilters: ActiveFilters = { ...sidebarFiltersRef.current };
+        if (sottocategoria) {
+          contextFilters.sottocategoria = [sottocategoria];
+        }
+
+        const data = await fetchFilters(contextFilters);
+
+        if (!cancelled && data.success && data.data) {
+          setAvailableFilters(data.data.filters || []);
+          setPriceRange(data.data.price_range || { min: 0, max: 10000, avg: 500 });
+        }
+      } catch (error) {
+        console.error('Error loading filters:', error);
+      } finally {
+        if (!cancelled) setFiltersLoading(false);
+      }
+    }
+
+    const timer = setTimeout(doFetchFilters, 100);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [fetchTrigger, sottocategoria]);
+
+  // ============================================
+  // HANDLERS
+  // ============================================
+
+  const handleFilterChange = useCallback((newFilters: ActiveFilters) => {
+    // Strip sottocategoria (URL-driven, not sidebar)
+    const { sottocategoria: _sub, ...sidebarOnly } = newFilters;
+    console.log('🔧 Filter changed:', JSON.stringify(sidebarOnly));
+    setSidebarFilters(sidebarOnly);
+    setCurrentPage(1);
+    // Trigger re-fetch
+    setFetchTrigger(t => t + 1);
+  }, []);
+
+  const handleSortChange = useCallback((newSort: string) => {
+    setSortBy(newSort);
+    setCurrentPage(1);
+    setFetchTrigger(t => t + 1);
+  }, []);
+
+  const handleClearAllFilters = useCallback(() => {
+    setSidebarFilters({});
+    setCurrentPage(1);
+    setFetchTrigger(t => t + 1);
+  }, []);
+
+  const handlePageChange = useCallback((page: number) => {
+    setCurrentPage(page);
+    setFetchTrigger(t => t + 1);
+  }, []);
+
+  // Count active sidebar filters for badge
+  const activeFilterCount = Object.entries(sidebarFilters).reduce((count, [, value]) => {
+    if (Array.isArray(value)) return count + value.length;
+    if (value !== undefined && value !== null) return count + 1;
+    return count;
+  }, 0);
+
+  // ============================================
+  // PAGE TITLE
+  // ============================================
+  const pageTitle = search
+    ? `Risultati per "${search}"`
+    : sottocategoria
+      ? subcategoryLabels[sottocategoria] || sottocategoria
       : 'Tutti i Prodotti';
 
+  // Clear search handler
+  const handleClearSearch = useCallback(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete('search');
+    const newQuery = params.toString();
+    router.push(`/prodotti${newQuery ? '?' + newQuery : ''}`, { scroll: false });
+  }, [searchParams, router]);
+
+  // ============================================
+  // RENDER
+  // ============================================
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -128,85 +242,75 @@ function ProductsPageContent() {
             <h1 className="text-3xl lg:text-4xl font-bold text-gray-900">
               {pageTitle}
             </h1>
-            <p className="mt-2 text-gray-600">
-              {totalProducts} prodott{totalProducts === 1 ? 'o' : 'i'} disponibil{totalProducts === 1 ? 'e' : 'i'}
-            </p>
+            <div className="mt-2 flex items-center gap-3">
+              <p className="text-gray-600">
+                {totalProducts} prodott{totalProducts === 1 ? 'o' : 'i'} disponibil{totalProducts === 1 ? 'e' : 'i'}
+              </p>
+              {search && (
+                <button
+                  onClick={handleClearSearch}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 text-gray-600 text-sm rounded-full hover:bg-gray-200 transition-colors"
+                >
+                  <Search className="w-3.5 h-3.5" />
+                  <span>{search}</span>
+                  <X className="w-3.5 h-3.5 ml-0.5" />
+                </button>
+              )}
+            </div>
           </motion.div>
         </div>
       </div>
 
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
-          {/* Sidebar Filtri - Desktop */}
-          <aside className="hidden lg:block w-64 flex-shrink-0">
-            <div className="sticky top-24 bg-white rounded-xl p-6 shadow-sm">
-              <h3 className="font-semibold text-gray-900 mb-4">Categorie</h3>
-              <div className="space-y-2">
-                <button
-                  onClick={() => handleCategoryChange('')}
-                  className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                    !categoria
-                      ? 'bg-black text-white'
-                      : 'text-gray-600 hover:bg-gray-100'
-                  }`}
-                >
-                  Tutti
-                </button>
-                {Object.entries(categoryLabels).map(([value, label]) => (
-                  <button
-                    key={value}
-                    onClick={() => handleCategoryChange(value)}
-                    className={`w-full text-left px-3 py-2 rounded-lg transition-colors ${
-                      categoria === value
-                        ? 'bg-black text-white'
-                        : 'text-gray-600 hover:bg-gray-100'
-                    }`}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-
-              {categoria && (
-                <button
-                  onClick={handleClearFilters}
-                  className="mt-6 w-full flex items-center justify-center gap-2 text-sm text-red-600 hover:text-red-700"
-                >
-                  <X className="w-4 h-4" />
-                  Rimuovi filtri
-                </button>
+          {/* ============================================ */}
+          {/* SIDEBAR FILTRI - Desktop */}
+          {/* ============================================ */}
+          <aside className="hidden lg:block w-72 flex-shrink-0">
+            <div className="sticky top-24 bg-white rounded-xl p-5 shadow-sm max-h-[calc(100vh-8rem)] overflow-y-auto custom-scrollbar">
+              {filtersLoading && availableFilters.length === 0 ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                </div>
+              ) : (
+                <ProductFilters
+                  filters={availableFilters}
+                  priceRange={priceRange}
+                  activeFilters={sidebarFilters}
+                  onFilterChange={handleFilterChange}
+                  totalFiltered={totalProducts}
+                />
               )}
             </div>
           </aside>
 
-          {/* Main Content */}
+          {/* ============================================ */}
+          {/* MAIN CONTENT */}
+          {/* ============================================ */}
           <div className="flex-1">
             {/* Toolbar */}
             <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-              {/* Filtri Mobile */}
+              {/* Mobile filter button */}
               <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="lg:hidden flex items-center gap-2 px-4 py-2 bg-white rounded-lg shadow-sm"
+                onClick={() => setMobileFiltersOpen(true)}
+                className="lg:hidden flex items-center gap-2 px-4 py-2.5 bg-white rounded-lg shadow-sm hover:shadow transition-shadow"
               >
-                <Filter className="w-4 h-4" />
-                Filtri
-                {categoria && (
-                  <span className="ml-1 px-2 py-0.5 bg-black text-white text-xs rounded-full">
-                    1
+                <SlidersHorizontal className="w-4 h-4" />
+                <span className="text-sm font-medium">Filtri</span>
+                {activeFilterCount > 0 && (
+                  <span className="px-1.5 py-0.5 bg-gray-900 text-white text-xs rounded-full">
+                    {activeFilterCount}
                   </span>
                 )}
               </button>
 
-              {/* Ordinamento */}
+              {/* Sort */}
               <div className="flex items-center gap-2 ml-auto">
-                <span className="text-sm text-gray-500">Ordina per:</span>
+                <span className="text-sm text-gray-500 hidden sm:inline">Ordina per:</span>
                 <div className="relative">
                   <select
                     value={sortBy}
-                    onChange={(e) => {
-                      setSortBy(e.target.value);
-                      setCurrentPage(1);
-                    }}
+                    onChange={(e) => handleSortChange(e.target.value)}
                     className="appearance-none bg-white border border-gray-200 rounded-lg px-4 py-2 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-black"
                   >
                     {sortOptions.map((option) => (
@@ -219,49 +323,6 @@ function ProductsPageContent() {
                 </div>
               </div>
             </div>
-
-            {/* Filtri Mobile Panel */}
-            {showFilters && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="lg:hidden bg-white rounded-xl p-4 mb-6 shadow-sm"
-              >
-                <h3 className="font-semibold text-gray-900 mb-3">Categorie</h3>
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    onClick={() => {
-                      handleCategoryChange('');
-                      setShowFilters(false);
-                    }}
-                    className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
-                      !categoria
-                        ? 'bg-black text-white'
-                        : 'bg-gray-100 text-gray-600'
-                    }`}
-                  >
-                    Tutti
-                  </button>
-                  {Object.entries(categoryLabels).map(([value, label]) => (
-                    <button
-                      key={value}
-                      onClick={() => {
-                        handleCategoryChange(value);
-                        setShowFilters(false);
-                      }}
-                      className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
-                        categoria === value
-                          ? 'bg-black text-white'
-                          : 'bg-gray-100 text-gray-600'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-            )}
 
             {/* Product Grid */}
             {loading ? (
@@ -286,20 +347,46 @@ function ProductsPageContent() {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
                       disabled={currentPage === 1}
                     >
                       Precedente
                     </Button>
-                    <span className="px-4 py-2 text-sm text-gray-600">
-                      Pagina {currentPage} di {totalPages}
-                    </span>
+
+                    {/* Page numbers */}
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                        let pageNum: number;
+                        if (totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNum = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          pageNum = currentPage - 2 + i;
+                        }
+
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => handlePageChange(pageNum)}
+                            className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
+                              currentPage === pageNum
+                                ? 'bg-gray-900 text-white'
+                                : 'text-gray-600 hover:bg-gray-100'
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() =>
-                        setCurrentPage((p) => Math.min(totalPages, p + 1))
-                      }
+                      onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
                       disabled={currentPage === totalPages}
                     >
                       Successiva
@@ -309,16 +396,21 @@ function ProductsPageContent() {
               </>
             ) : (
               <div className="text-center py-20">
-                <p className="text-gray-500 text-lg">
+                <div className="w-20 h-20 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+                  <FilterIcon className="w-8 h-8 text-gray-400" />
+                </div>
+                <p className="text-gray-500 text-lg mb-2">
                   Nessun prodotto trovato
                 </p>
-                {categoria && (
+                <p className="text-gray-400 text-sm mb-6">
+                  Prova a modificare i filtri o la ricerca
+                </p>
+                {activeFilterCount > 0 && (
                   <Button
                     variant="outline"
-                    onClick={handleClearFilters}
-                    className="mt-4"
+                    onClick={handleClearAllFilters}
                   >
-                    Mostra tutti i prodotti
+                    Rimuovi tutti i filtri
                   </Button>
                 )}
               </div>
@@ -326,11 +418,24 @@ function ProductsPageContent() {
           </div>
         </div>
       </div>
+
+      {/* Mobile Filters Drawer */}
+      <MobileFiltersDrawer
+        isOpen={mobileFiltersOpen}
+        onClose={() => setMobileFiltersOpen(false)}
+        filters={availableFilters}
+        priceRange={priceRange}
+        activeFilters={sidebarFilters}
+        onFilterChange={handleFilterChange}
+        totalFiltered={totalProducts}
+      />
     </div>
   );
 }
 
-// Wrapper con Suspense per useSearchParams
+// ============================================
+// WRAPPER with Suspense
+// ============================================
 export default function ProductsPage() {
   return (
     <Suspense

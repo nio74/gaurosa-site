@@ -1,4 +1,27 @@
 <?php
+// === CHECK MANUTENZIONE ===
+// Bypass per API (sync MazGest, maintenance toggle, etc.)
+$requestUri = $_SERVER['REQUEST_URI'] ?? '';
+$isApiRequest = strpos($requestUri, '/api-') === 0 || strpos($requestUri, '/api/') === 0;
+
+if (!$isApiRequest) {
+    $maintenanceFile = __DIR__ . '/maintenance.json';
+    if (file_exists($maintenanceFile)) {
+        $maintenance = json_decode(file_get_contents($maintenanceFile), true);
+        if ($maintenance && !empty($maintenance['enabled'])) {
+            // Check IP whitelist
+            $clientIp = $_SERVER['REMOTE_ADDR'] ?? '';
+            $allowedIps = $maintenance['allowed_ips'] ?? [];
+            if (!in_array($clientIp, $allowedIps)) {
+                http_response_code(503);
+                header('Retry-After: 3600');
+                include __DIR__ . '/maintenance.html';
+                exit;
+            }
+        }
+    }
+}
+
 // Router semplice per servire i file statici da out/
 $uri = $_SERVER['REQUEST_URI'];
 $path = parse_url($uri, PHP_URL_PATH);

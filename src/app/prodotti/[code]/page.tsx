@@ -1,4 +1,4 @@
-import { Suspense } from 'react';
+import { Suspense, use } from 'react';
 import ProductDetailClient from './ProductDetailClient';
 
 // Genera parametri statici per l'export
@@ -12,10 +12,11 @@ export async function generateStaticParams() {
   ];
 }
 
-export default function ProductDetailPage({ params }: { params: { code: string } }) {
+export default function ProductDetailPage({ params }: { params: Promise<{ code: string }> }) {
+  const { code } = use(params);
   return (
     <Suspense fallback={<div>Caricamento...</div>}>
-      <ProductDetailClient code={params.code} />
+      <ProductDetailClient code={code} />
     </Suspense>
   );
 }
