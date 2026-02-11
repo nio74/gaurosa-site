@@ -75,6 +75,17 @@ if (file_exists($indexFile)) {
     exit;
 }
 
+// Dynamic routes fallback: serve a pre-rendered shell for client-side rendering
+// /prodotti/XXXXX → serve the product detail shell (client fetches data via API)
+if (preg_match('#^/prodotti/([A-Za-z0-9_-]+)$#', $path)) {
+    // Serve any pre-generated product page as shell - ProductDetailClient reads code from URL
+    $shellFile = __DIR__ . '/out/prodotti/M01012/index.html';
+    if (file_exists($shellFile)) {
+        include $shellFile;
+        exit;
+    }
+}
+
 // 404
 http_response_code(404);
 if (file_exists(__DIR__ . '/out/404.html')) {
