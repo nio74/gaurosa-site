@@ -136,9 +136,13 @@ model ProductImage {
   productId Int     @map("product_id")
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
-  url       String  @db.VarChar(500)
-  isPrimary Boolean @default(false) @map("is_primary")
-  sortOrder Int     @default(0) @map("sort_order")
+  url         String  @db.VarChar(500)           // Large version (1200px) or original
+  urlMedium   String? @map("url_medium") @db.VarChar(500)  // Medium version (600px)
+  urlThumb    String? @map("url_thumb") @db.VarChar(500)   // Thumbnail (200px)
+  blurDataUri String? @map("blur_data_uri") @db.Text       // Base64 blur placeholder (20px)
+  isPrimary   Boolean @default(false) @map("is_primary")
+  sortOrder   Int     @default(0) @map("sort_order")
+  updatedAt   DateTime? @map("updated_at")
 
   @@index([productId])
   @@map("product_images")

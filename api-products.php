@@ -215,9 +215,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 p.created_at,
                 p.updated_at,
                 GROUP_CONCAT(
-                    CONCAT(pi.url, '|', pi.is_primary, '|', pi.sort_order)
+                    CONCAT(
+                        COALESCE(pi.url, ''), '|', 
+                        pi.is_primary, '|', 
+                        pi.sort_order, '|',
+                        COALESCE(pi.url_thumb, ''), '|',
+                        COALESCE(pi.blur_data_uri, '')
+                    )
                     ORDER BY pi.is_primary DESC, pi.sort_order ASC
-                    SEPARATOR ','
+                    SEPARATOR ';;'
                 ) as images_data
             FROM products p
             LEFT JOIN product_images pi ON p.id = pi.product_id
@@ -267,17 +273,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         // Formatta prodotti
         // ============================================
         $formattedProducts = array_map(function($product) {
-            // Parse immagini
+            // Parse immagini (with optimized versions)
             $images = [];
             if (!empty($product['images_data'])) {
-                $imageStrings = explode(',', $product['images_data']);
+                $imageStrings = explode(';;', $product['images_data']);
                 foreach ($imageStrings as $imgString) {
                     $parts = explode('|', $imgString);
                     if (count($parts) >= 3) {
                         $images[] = [
                             'url' => $parts[0],
                             'is_primary' => (bool)$parts[1],
-                            'position' => (int)$parts[2]
+                            'position' => (int)$parts[2],
+                            'url_thumb' => !empty($parts[3]) ? $parts[3] : null,
+                            'blur_data_uri' => !empty($parts[4]) ? $parts[4] : null,
                         ];
                     }
                 }

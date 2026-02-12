@@ -48,9 +48,9 @@ try {
         jsonResponse(['success' => false, 'error' => 'Prodotto non trovato'], 404);
     }
     
-    // Query immagini
+    // Query immagini (include optimized versions)
     $imgStmt = $pdo->prepare("
-        SELECT url, is_primary, sort_order 
+        SELECT url, url_medium, url_thumb, blur_data_uri, is_primary, sort_order 
         FROM product_images 
         WHERE product_id = :productId 
         ORDER BY is_primary DESC, sort_order ASC
@@ -103,10 +103,13 @@ try {
             'status' => $product['stock_status'],
         ],
         
-        // Immagini
+        // Immagini (with optimized versions)
         'images' => array_map(function($img) {
             return [
                 'url' => $img['url'],
+                'url_medium' => $img['url_medium'] ?? null,
+                'url_thumb' => $img['url_thumb'] ?? null,
+                'blur_data_uri' => $img['blur_data_uri'] ?? null,
                 'is_primary' => (bool)$img['is_primary'],
                 'position' => (int)$img['sort_order'],
             ];
