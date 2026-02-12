@@ -18,7 +18,9 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
   const { addToCart } = useCart();
 
   const primaryImage = product.images.find((img) => img.is_primary) || product.images[0];
-  const imageUrl = primaryImage?.url || '/images/placeholder-product.jpg';
+  // Use thumb for card (200px, perfect for cards), fallback to original url
+  const imageUrl = primaryImage?.url_thumb || primaryImage?.url || '/images/placeholder-product.jpg';
+  const blurDataUrl = primaryImage?.blur_data_uri;
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -42,6 +44,8 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-110"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+            placeholder={blurDataUrl ? "blur" : "empty"}
+            blurDataURL={blurDataUrl || undefined}
           />
 
           {/* Overlay hover */}

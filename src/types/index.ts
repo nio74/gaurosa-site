@@ -10,6 +10,9 @@ import type { FC } from 'react';
 
 export interface ProductImage {
   url: string;
+  url_medium?: string | null;
+  url_thumb?: string | null;
+  blur_data_uri?: string | null;
   is_primary: boolean;
   position: number;
 }

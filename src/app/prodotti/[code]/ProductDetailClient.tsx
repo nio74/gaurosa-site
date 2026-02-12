@@ -44,6 +44,9 @@ interface ProductDetail {
   };
   images: Array<{
     url: string;
+    url_medium?: string | null;
+    url_thumb?: string | null;
+    blur_data_uri?: string | null;
     is_primary: boolean;
     position: number;
   }>;
@@ -355,6 +358,8 @@ export default function ProductDetailClient({ code: codeProp }: { code: string }
                 className="object-cover"
                 sizes="(max-width: 1024px) 100vw, 50vw"
                 priority
+                placeholder={images[selectedImage].blur_data_uri ? "blur" : "empty"}
+                blurDataURL={images[selectedImage].blur_data_uri || undefined}
               />
 
               {/* Navigation arrows */}
@@ -412,11 +417,13 @@ export default function ProductDetailClient({ code: codeProp }: { code: string }
                     }`}
                   >
                     <Image
-                      src={img.url}
+                      src={img.url_thumb || img.url}
                       alt={`${product.name} ${index + 1}`}
                       fill
                       className="object-cover"
                       sizes="80px"
+                      placeholder={img.blur_data_uri ? "blur" : "empty"}
+                      blurDataURL={img.blur_data_uri || undefined}
                     />
                   </button>
                 ))}
@@ -466,16 +473,6 @@ export default function ProductDetailClient({ code: codeProp }: { code: string }
 
             </div>
 
-            {/* Description */}
-            {(product.description || product.description_it) && (
-              <div className="mt-6">
-                <h3 className="font-semibold text-gray-900 mb-2">Descrizione</h3>
-                <p className="text-gray-600 leading-relaxed">
-                  {product.description_it || product.description}
-                </p>
-              </div>
-            )}
-
             {/* Variants */}
             {product.variants && product.variants.length > 0 && (
               <div className="mt-6">
@@ -488,7 +485,14 @@ export default function ProductDetailClient({ code: codeProp }: { code: string }
                   )}
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {product.variants.map((variant) => {
+                  {product.variants
+                    .sort((a, b) => {
+                      // Sort by size/attributeValue numerically (ascending)
+                      const aValue = parseFloat(a.size || '0');
+                      const bValue = parseFloat(b.size || '0');
+                      return aValue - bValue;
+                    })
+                    .map((variant) => {
                     const isSelected = selectedVariant === variant.sku;
                     const isDisabled = variant.stock === 0;
                     const showPrice = hasVariantPricing && variant.price !== null && variant.price !== product.price;
@@ -558,6 +562,31 @@ export default function ProductDetailClient({ code: codeProp }: { code: string }
             </div>
           </motion.div>
         </div>
+
+        {/* Description Section */}
+        {(product.description || product.description_it) && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="mt-12 overflow-hidden"
+          >
+            <div className="bg-gray-50 rounded-2xl p-6 md:p-8 overflow-hidden">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">Descrizione</h2>
+              <div 
+                className="text-gray-700 leading-relaxed whitespace-pre-line text-sm md:text-base w-full max-w-full"
+                style={{ 
+                  lineHeight: '1.7',
+                  wordWrap: 'break-word',
+                  overflowWrap: 'break-word',
+                  wordBreak: 'break-word'
+                }}
+              >
+                {product.description_it || product.description}
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Attributes Section */}
         {displayAttributes.length > 0 && (
