@@ -61,7 +61,19 @@ try {
     $productId = $product['id'];
     $productCode = $product['code'];
 
-    // Delete product images
+    // Delete image files from disk
+    $imageDir = __DIR__ . '/uploads/products/' . preg_replace('/[^a-zA-Z0-9\-_]/', '', $productCode);
+    if (is_dir($imageDir)) {
+        $files = glob($imageDir . '/*');
+        foreach ($files as $file) {
+            if (is_file($file)) {
+                unlink($file);
+            }
+        }
+        rmdir($imageDir);
+    }
+
+    // Delete product images from DB
     $pdo->prepare("DELETE FROM product_images WHERE product_id = ?")->execute([$productId]);
 
     // Delete product variants

@@ -324,7 +324,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Sync immagini
             if (!empty($product['images'])) {
-                // Elimina immagini esistenti
+                // Delete old image files from disk before re-syncing
+                $safeCode = preg_replace('/[^a-zA-Z0-9\-_]/', '', $product['code']);
+                $imageDir = __DIR__ . '/uploads/products/' . $safeCode;
+                if (is_dir($imageDir)) {
+                    $oldFiles = glob($imageDir . '/*');
+                    foreach ($oldFiles as $oldFile) {
+                        if (is_file($oldFile)) {
+                            unlink($oldFile);
+                        }
+                    }
+                }
+
+                // Elimina immagini esistenti dal DB
                 $pdo->prepare("DELETE FROM product_images WHERE product_id = ?")->execute([$productId]);
 
                 // Inserisci nuove

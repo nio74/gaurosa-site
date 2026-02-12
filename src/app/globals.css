@@ -10,13 +10,16 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Gaurosa brand colors */
+  --color-brand-pink: #f9c3d5;
+  --color-brand-pink-light: #fce4ed;
+  --color-brand-pink-border: #e8a0b8;
+  --color-brand-rose: #8b1538;
+  --color-brand-rose-dark: #6b1028;
+  --color-brand-text: #2d1b1f;
+  --color-brand-white: #faf7f8;
+  --color-brand-gold: #d4af37;
 }
 
 body {

@@ -181,7 +181,7 @@ export default function HomePage() {
                 transition={{ delay: index * 0.1 }}
                 className="text-center"
               >
-                <div className="inline-flex items-center justify-center w-14 h-14 bg-black text-white rounded-full mb-4">
+                <div className="inline-flex items-center justify-center w-14 h-14 bg-brand-rose text-white rounded-full mb-4">
                   <feature.icon className="w-6 h-6" />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900">{feature.title}</h3>
@@ -193,7 +193,7 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 lg:py-24 bg-black text-white">
+      <section className="py-16 lg:py-24 bg-brand-rose text-white">
         <div className="container mx-auto px-4 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -203,16 +203,16 @@ export default function HomePage() {
             <h2 className="text-3xl lg:text-4xl font-bold">
               Iscriviti alla Newsletter
             </h2>
-            <p className="mt-4 text-gray-400 max-w-xl mx-auto">
+            <p className="mt-4 text-brand-pink/70 max-w-xl mx-auto">
               Resta aggiornato sulle novità, offerte esclusive e eventi speciali.
             </p>
             <form className="mt-8 flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
               <input
                 type="email"
                 placeholder="La tua email"
-                className="flex-1 px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-white/50"
+                className="flex-1 px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-brand-pink/50 focus:outline-none focus:ring-2 focus:ring-brand-pink/50"
               />
-              <Button className="bg-white text-black hover:bg-gray-100">
+              <Button className="bg-white text-brand-rose hover:bg-brand-pink-light">
                 Iscriviti
               </Button>
             </form>

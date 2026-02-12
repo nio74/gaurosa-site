@@ -33,13 +33,13 @@ export default function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-gray-900 text-gray-300">
+    <footer className="bg-brand-rose text-brand-pink/90">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
           {/* Brand */}
           <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-white tracking-tight">GAUROSA</h2>
-            <p className="text-sm text-gray-400 max-w-xs">
+            <h2 className="text-2xl font-bold text-brand-white tracking-tight">GAUROSA</h2>
+            <p className="text-sm text-brand-pink/70 max-w-xs">
               Gioielli artigianali di qualità, realizzati a mano con passione. 
               Dal produttore al consumatore dal 1960.
             </p>
@@ -51,9 +51,9 @@ export default function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={social.label}
-                  className="p-2 bg-gray-800 rounded-full hover:bg-gray-700 transition-colors"
+                  className="p-2 bg-brand-rose-dark rounded-full hover:bg-brand-gold transition-colors group"
                 >
-                  <social.icon className="w-5 h-5" />
+                  <social.icon className="w-5 h-5 group-hover:text-brand-text" />
                 </a>
               ))}
             </div>
@@ -61,7 +61,7 @@ export default function Footer() {
 
           {/* Shop Links */}
           <div>
-            <h3 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">
+            <h3 className="text-sm font-semibold text-brand-white uppercase tracking-wider mb-4">
               Shop
             </h3>
             <ul className="space-y-3">
@@ -69,7 +69,7 @@ export default function Footer() {
                 <li key={link.name}>
                   <Link
                     href={link.href}
-                    className="text-sm hover:text-white transition-colors"
+                    className="text-sm hover:text-brand-white transition-colors"
                   >
                     {link.name}
                   </Link>
@@ -80,7 +80,7 @@ export default function Footer() {
 
           {/* Info Links */}
           <div>
-            <h3 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">
+            <h3 className="text-sm font-semibold text-brand-white uppercase tracking-wider mb-4">
               Informazioni
             </h3>
             <ul className="space-y-3">
@@ -88,7 +88,7 @@ export default function Footer() {
                 <li key={link.name}>
                   <Link
                     href={link.href}
-                    className="text-sm hover:text-white transition-colors"
+                    className="text-sm hover:text-brand-white transition-colors"
                   >
                     {link.name}
                   </Link>
@@ -99,7 +99,7 @@ export default function Footer() {
 
           {/* Contact */}
           <div>
-            <h3 className="text-sm font-semibold text-white uppercase tracking-wider mb-4">
+            <h3 className="text-sm font-semibold text-brand-white uppercase tracking-wider mb-4">
               Contatti
             </h3>
             <ul className="space-y-3">
@@ -110,7 +110,7 @@ export default function Footer() {
               <li>
                 <a
                   href="tel:+393926191199"
-                  className="flex items-center gap-2 text-sm hover:text-white transition-colors"
+                  className="flex items-center gap-2 text-sm hover:text-brand-white transition-colors"
                 >
                   <Phone className="w-4 h-4" />
                   <span>+39 392 619 1199</span>
@@ -119,15 +119,15 @@ export default function Footer() {
               <li>
                 <a
                   href="mailto:info@gaurosa.it"
-                  className="flex items-center gap-2 text-sm hover:text-white transition-colors"
+                  className="flex items-center gap-2 text-sm hover:text-brand-white transition-colors"
                 >
                   <Mail className="w-4 h-4" />
                   <span>info@gaurosa.it</span>
                 </a>
               </li>
             </ul>
-            <div className="mt-4 pt-3 border-t border-gray-800">
-              <p className="text-xs text-gray-500">
+            <div className="mt-4 pt-3 border-t border-brand-pink/20">
+              <p className="text-xs text-brand-pink/60">
                 Lun - Sab: 9:00 - 12:30 | 15:30 - 19:30
               </p>
             </div>
@@ -135,13 +135,13 @@ export default function Footer() {
         </div>
 
         {/* Bottom */}
-        <div className="mt-12 pt-8 border-t border-gray-800">
+        <div className="mt-12 pt-8 border-t border-brand-pink/20">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="text-center sm:text-left">
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-brand-pink/70">
                 &copy; {currentYear} Gaurosa - marchio di proprietà della Mazzon Gioielli S.N.C.
               </p>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-brand-pink/50 mt-1">
                 P.IVA IT05120880280 | Via Don G. Carrara, 19 - 35010 Villa del Conte (PD) - Italia
               </p>
             </div>
@@ -150,7 +150,7 @@ export default function Footer() {
                 <Link
                   key={link.name}
                   href={link.href}
-                  className="text-xs text-gray-400 hover:text-white transition-colors"
+                  className="text-xs text-brand-pink/70 hover:text-brand-white transition-colors"
                 >
                   {link.name}
                 </Link>
