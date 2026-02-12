@@ -85,14 +85,14 @@ function HeaderContent() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-brand-pink/90 backdrop-blur-md border-b border-brand-pink-border/30">
         <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 lg:h-20">
             {/* Logo */}
             <Link href="/" className="flex-shrink-0">
               <motion.span
                 whileHover={{ scale: 1.05 }}
-                className="text-2xl font-bold tracking-tight text-gray-900"
+                className="text-2xl font-bold tracking-tight text-brand-text"
               >
                 GAUROSA
               </motion.span>
@@ -111,12 +111,12 @@ function HeaderContent() {
                     href={item.href}
                     className={`text-sm font-medium transition-colors relative group ${
                       isActive
-                        ? 'text-gray-900'
-                        : 'text-gray-600 hover:text-gray-900'
+                        ? 'text-brand-rose'
+                        : 'text-brand-text/80 hover:text-brand-rose'
                     }`}
                   >
                     {item.name}
-                    <span className={`absolute -bottom-1 left-0 h-0.5 bg-gray-900 transition-all ${
+                    <span className={`absolute -bottom-1 left-0 h-0.5 bg-brand-rose transition-all ${
                       isActive ? 'w-full' : 'w-0 group-hover:w-full'
                     }`} />
                   </Link>
@@ -128,30 +128,30 @@ function HeaderContent() {
             <div className="hidden lg:flex lg:items-center lg:gap-4">
               <button
                 onClick={() => setSearchOpen(true)}
-                className="p-2 text-gray-600 hover:text-gray-900 transition-colors group relative"
+                className="p-2 text-brand-text/80 hover:text-brand-rose transition-colors group relative"
                 aria-label="Cerca prodotti"
               >
                 <Search className="w-5 h-5" />
-                <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                <span className="absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] text-brand-text/50 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
                   Ctrl+K
                 </span>
               </button>
               <Link
                 href="/account"
-                className="p-2 text-gray-600 hover:text-gray-900 transition-colors"
+                className="p-2 text-brand-text/80 hover:text-brand-rose transition-colors"
               >
                 <User className="w-5 h-5" />
               </Link>
               <Link
                 href="/carrello"
-                className="p-2 text-gray-600 hover:text-gray-900 transition-colors relative"
+                className="p-2 text-brand-text/80 hover:text-brand-rose transition-colors relative"
               >
                 <ShoppingBag className="w-5 h-5" />
                 {itemCount > 0 && (
                   <motion.span
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
-                    className="absolute -top-1 -right-1 w-5 h-5 bg-black text-white text-xs font-medium rounded-full flex items-center justify-center"
+                    className="absolute -top-1 -right-1 w-5 h-5 bg-brand-rose text-white text-xs font-semibold rounded-full flex items-center justify-center"
                   >
                     {itemCount}
                   </motion.span>
@@ -163,22 +163,22 @@ function HeaderContent() {
             <div className="flex lg:hidden items-center gap-2">
               <button
                 onClick={() => setSearchOpen(true)}
-                className="p-2 text-gray-600 hover:text-gray-900 transition-colors"
+                className="p-2 text-brand-text/80 hover:text-brand-rose transition-colors"
                 aria-label="Cerca prodotti"
               >
                 <Search className="w-5 h-5" />
               </button>
-              <Link href="/carrello" className="relative p-2">
+              <Link href="/carrello" className="relative p-2 text-brand-text/80">
                 <ShoppingBag className="w-5 h-5" />
                 {itemCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-black text-white text-xs font-medium rounded-full flex items-center justify-center">
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-brand-rose text-white text-xs font-semibold rounded-full flex items-center justify-center">
                     {itemCount}
                   </span>
                 )}
               </Link>
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="p-2"
+                className="p-2 text-brand-text/80"
               >
                 {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
               </button>
@@ -193,7 +193,7 @@ function HeaderContent() {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="lg:hidden bg-white border-t border-gray-100"
+              className="lg:hidden bg-brand-pink/95 backdrop-blur-md border-t border-brand-pink-border/30"
             >
               <div className="container mx-auto px-4 py-6 space-y-4">
                 {navigation.map((item) => {
@@ -207,19 +207,19 @@ function HeaderContent() {
                       onClick={() => setMobileMenuOpen(false)}
                       className={`block text-lg font-medium ${
                         isActive
-                          ? 'text-gray-900 border-l-2 border-gray-900 pl-3'
-                          : 'text-gray-600 hover:text-gray-900'
+                          ? 'text-brand-rose border-l-2 border-brand-rose pl-3'
+                          : 'text-brand-text/80 hover:text-brand-rose'
                       }`}
                     >
                       {item.name}
                     </Link>
                   );
                 })}
-                <div className="pt-4 border-t border-gray-100">
+                <div className="pt-4 border-t border-brand-pink-border/30">
                   <Link
                     href="/account"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+                    className="flex items-center gap-2 text-brand-text/80 hover:text-brand-rose"
                   >
                     <User className="w-5 h-5" />
                     <span>Il mio account</span>
@@ -244,7 +244,7 @@ function HeaderContent() {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
               onClick={() => { setSearchOpen(false); setSearchQuery(''); }}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60]"
+              className="fixed inset-0 bg-brand-rose/30 backdrop-blur-sm z-[60]"
             />
 
             {/* Search panel */}
@@ -265,14 +265,14 @@ function HeaderContent() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Cerca gioielli, orologi, accessori..."
-                    className="w-full pl-12 pr-24 py-4 text-lg bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent placeholder:text-gray-400"
+                    className="w-full pl-12 pr-24 py-4 text-lg bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-rose focus:border-transparent placeholder:text-gray-400"
                     autoComplete="off"
                   />
                   <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
                     {searchQuery.trim() && (
                       <button
                         type="submit"
-                        className="flex items-center gap-1 px-3 py-1.5 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors"
+                        className="flex items-center gap-1 px-3 py-1.5 bg-brand-rose text-white text-sm font-medium rounded-lg hover:bg-brand-rose-dark transition-colors"
                       >
                         Cerca
                         <ArrowRight className="w-3.5 h-3.5" />
@@ -299,7 +299,7 @@ function HeaderContent() {
                         <button
                           key={suggestion.query}
                           onClick={() => handleSearch(suggestion.query)}
-                          className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-full hover:bg-gray-200 transition-colors"
+                          className="px-3 py-1.5 bg-brand-pink-light text-brand-text text-sm rounded-full hover:bg-brand-pink transition-colors"
                         >
                           {suggestion.label}
                         </button>
@@ -332,10 +332,10 @@ function HeaderContent() {
 export default function Header() {
   return (
     <Suspense fallback={
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-brand-pink/90 backdrop-blur-md border-b border-brand-pink-border/30">
         <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 lg:h-20">
-            <span className="text-2xl font-bold tracking-tight text-gray-900">GAUROSA</span>
+            <span className="text-2xl font-bold tracking-tight text-brand-text">GAUROSA</span>
           </div>
         </nav>
       </header>

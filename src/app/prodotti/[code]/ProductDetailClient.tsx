@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -196,6 +196,19 @@ export default function ProductDetailClient({ code: codeProp }: { code: string }
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedVariant, setSelectedVariant] = useState<string | null>(null);
 
+  // Image zoom state (desktop hover zoom)
+  const [isZooming, setIsZooming] = useState(false);
+  const [zoomPosition, setZoomPosition] = useState({ x: 50, y: 50 });
+  const imageContainerRef = useRef<HTMLDivElement>(null);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!imageContainerRef.current) return;
+    const rect = imageContainerRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setZoomPosition({ x, y });
+  };
+
   useEffect(() => {
     async function loadProduct() {
       try {
@@ -349,31 +362,49 @@ export default function ProductDetailClient({ code: codeProp }: { code: string }
             animate={{ opacity: 1, x: 0 }}
             className="space-y-4"
           >
-            {/* Main Image */}
-            <div className="relative aspect-square overflow-hidden rounded-2xl bg-gray-100">
+            {/* Main Image with Zoom on Hover */}
+            <div
+              ref={imageContainerRef}
+              className="relative aspect-square overflow-hidden rounded-2xl bg-gray-100 cursor-zoom-in"
+              onMouseEnter={() => setIsZooming(true)}
+              onMouseLeave={() => setIsZooming(false)}
+              onMouseMove={handleMouseMove}
+            >
+              {/* Normal image (visible always) */}
               <Image
                 src={images[selectedImage].url}
                 alt={product.name}
                 fill
-                className="object-cover"
+                className={`object-cover transition-opacity duration-200 ${isZooming ? 'opacity-0 lg:opacity-0' : 'opacity-100'}`}
                 sizes="(max-width: 1024px) 100vw, 50vw"
                 priority
                 placeholder={images[selectedImage].blur_data_uri ? "blur" : "empty"}
                 blurDataURL={images[selectedImage].blur_data_uri || undefined}
               />
 
+              {/* Zoomed image (desktop only — follows mouse position) */}
+              <div
+                className={`absolute inset-0 hidden lg:block transition-opacity duration-200 ${isZooming ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                style={{
+                  backgroundImage: `url(${images[selectedImage].url})`,
+                  backgroundSize: '250%',
+                  backgroundPosition: `${zoomPosition.x}% ${zoomPosition.y}%`,
+                  backgroundRepeat: 'no-repeat',
+                }}
+              />
+
               {/* Navigation arrows */}
               {images.length > 1 && (
                 <>
                   <button
-                    onClick={prevImage}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/80 rounded-full shadow-lg hover:bg-white transition-colors"
+                    onClick={(e) => { e.stopPropagation(); prevImage(); }}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 p-2 bg-white/80 rounded-full shadow-lg hover:bg-white transition-colors z-10"
                   >
                     <ChevronLeft className="w-5 h-5" />
                   </button>
                   <button
-                    onClick={nextImage}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/80 rounded-full shadow-lg hover:bg-white transition-colors"
+                    onClick={(e) => { e.stopPropagation(); nextImage(); }}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-2 bg-white/80 rounded-full shadow-lg hover:bg-white transition-colors z-10"
                   >
                     <ChevronRight className="w-5 h-5" />
                   </button>
@@ -382,14 +413,14 @@ export default function ProductDetailClient({ code: codeProp }: { code: string }
 
               {/* Out of stock badge */}
               {!product.stock.available && (
-                <div className="absolute top-4 left-4 bg-red-500 text-white text-sm font-medium px-3 py-1 rounded-full">
+                <div className="absolute top-4 left-4 bg-red-500 text-white text-sm font-medium px-3 py-1 rounded-full z-10">
                   Esaurito
                 </div>
               )}
 
               {/* Tags */}
               {product.tags.length > 0 && product.stock.available && (
-                <div className="absolute top-4 left-4 flex flex-wrap gap-2">
+                <div className="absolute top-4 left-4 flex flex-wrap gap-2 z-10">
                   {product.tags.slice(0, 3).map(tag => (
                     <span
                       key={tag.code}
@@ -412,8 +443,8 @@ export default function ProductDetailClient({ code: codeProp }: { code: string }
                     onClick={() => setSelectedImage(index)}
                     className={`relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden border-2 transition-colors ${
                       selectedImage === index
-                        ? 'border-black'
-                        : 'border-transparent hover:border-gray-300'
+                        ? 'border-brand-rose'
+                        : 'border-transparent hover:border-brand-pink'
                     }`}
                   >
                     <Image
@@ -458,19 +489,12 @@ export default function ProductDetailClient({ code: codeProp }: { code: string }
               <p className="text-3xl font-bold text-gray-900">
                 {formatPrice(activePrice)}
               </p>
-              {/* Show base price struck through if variant has different price */}
-              {activeVariant && activeVariant.price !== null && activeVariant.price !== product.price && (
-                <p className="text-xl text-gray-400 line-through">
-                  {formatPrice(product.price)}
-                </p>
-              )}
-              {/* Show compare_at_price if no variant override */}
-              {!activeVariant && product.compare_at_price && product.compare_at_price > product.price && (
+              {/* Show compare_at_price only for actual discounts (not variant surcharges) */}
+              {product.compare_at_price && product.compare_at_price > product.price && !activeVariant && (
                 <p className="text-xl text-gray-400 line-through">
                   {formatPrice(product.compare_at_price)}
                 </p>
               )}
-
             </div>
 
             {/* Variants */}
@@ -504,10 +528,10 @@ export default function ProductDetailClient({ code: codeProp }: { code: string }
                         disabled={isDisabled}
                         className={`relative px-4 py-2 border rounded-lg transition-all ${
                           isSelected
-                            ? 'border-black bg-black text-white ring-1 ring-black'
+                            ? 'border-brand-rose bg-brand-rose text-white ring-1 ring-brand-rose'
                             : isDisabled
                             ? 'border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed'
-                            : 'border-gray-200 hover:border-gray-400 text-gray-900'
+                            : 'border-gray-200 hover:border-brand-pink-border text-gray-900'
                         }`}
                       >
                         <span className="text-sm font-medium">

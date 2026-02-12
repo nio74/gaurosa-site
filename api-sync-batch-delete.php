@@ -72,7 +72,21 @@ try {
     $deletedCodes = array_column($products, 'code');
     $internalPlaceholders = implode(',', array_fill(0, count($internalIds), '?'));
 
-    // Delete product images
+    // Delete image files from disk for each product
+    foreach ($deletedCodes as $code) {
+        $imageDir = __DIR__ . '/uploads/products/' . preg_replace('/[^a-zA-Z0-9\-_]/', '', $code);
+        if (is_dir($imageDir)) {
+            $files = glob($imageDir . '/*');
+            foreach ($files as $file) {
+                if (is_file($file)) {
+                    unlink($file);
+                }
+            }
+            rmdir($imageDir);
+        }
+    }
+
+    // Delete product images from DB
     $stmt = $pdo->prepare("DELETE FROM product_images WHERE product_id IN ($internalPlaceholders)");
     $stmt->execute($internalIds);
 
