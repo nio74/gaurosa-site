@@ -8,7 +8,7 @@ export default function TerminiPage() {
   return (
     <div className="min-h-screen">
       {/* Hero */}
-      <section className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white py-24 lg:py-28">
+      <section className="bg-gradient-to-br from-brand-rose via-brand-rose-dark to-brand-rose text-white py-24 lg:py-28">
         <div className="container mx-auto px-4 text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -18,7 +18,7 @@ export default function TerminiPage() {
             <h1 className="text-4xl lg:text-5xl font-bold tracking-tight">
               Termini e Condizioni
             </h1>
-            <p className="mt-4 text-gray-300">
+            <p className="mt-4 text-white/80">
               Condizioni generali di vendita del sito gaurosa.it
             </p>
           </motion.div>
@@ -103,7 +103,7 @@ export default function TerminiPage() {
                     'Il contratto di vendita si intende concluso al momento dell\'invio della conferma d\'ordine.',
                   ].map((step, i) => (
                     <div key={i} className="flex items-start gap-3">
-                      <span className="flex-shrink-0 w-6 h-6 bg-gray-900 text-white text-xs font-bold rounded-full flex items-center justify-center mt-0.5">
+                      <span className="flex-shrink-0 w-6 h-6 bg-brand-rose text-white text-xs font-bold rounded-full flex items-center justify-center mt-0.5">
                         {i + 1}
                       </span>
                       <p className="text-sm text-gray-600">{step}</p>

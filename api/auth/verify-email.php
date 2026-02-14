@@ -88,14 +88,13 @@ function syncCustomerToMazGest($customerId) {
 
         // Prepara dati per MazGest
         $mazgestData = [
-            'nome' => $customer['first_name'],
-            'cognome' => $customer['last_name'],
+            'firstName' => $customer['first_name'],
+            'lastName' => $customer['last_name'],
             'email' => $customer['email'],
-            'cellulare' => $customer['phone'] ?? '',
-            'consenso_marketing' => $customer['marketing_consent'] ? true : false,
-            'origine_cliente' => 'ecommerce',
-            'from_ecommerce' => true,
-            'ecommerce_customer_id' => $customer['id']
+            'phone' => $customer['phone'] ?? '',
+            'marketingConsent' => $customer['marketing_consent'] ? true : false,
+            'siteCustomerId' => $customer['id'],
+            'authProvider' => $customer['auth_provider'] ?? 'email'
         ];
 
         // Invia a MazGest
@@ -112,8 +111,16 @@ function syncCustomerToMazGest($customerId) {
         ]);
 
         $response = curl_exec($ch);
+        $curlError = curl_error($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
+
+        // Debug logging
+        error_log("[MazGest Sync] Customer ID: $customerId, URL: " . MAZGEST_API_URL . '/ecommerce/customers/sync');
+        error_log("[MazGest Sync] HTTP Code: $httpCode, Response: " . substr($response, 0, 500));
+        if ($curlError) {
+            error_log("[MazGest Sync] cURL Error: $curlError");
+        }
 
         if ($httpCode === 200 || $httpCode === 201) {
             $result = json_decode($response, true);

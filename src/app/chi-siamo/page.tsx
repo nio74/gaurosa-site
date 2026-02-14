@@ -60,7 +60,7 @@ export default function ChiSiamoPage() {
   return (
     <div className="min-h-screen">
       {/* Hero */}
-      <section className="relative bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white py-24 lg:py-32">
+      <section className="relative bg-gradient-to-br from-brand-rose via-brand-rose-dark to-brand-rose text-white py-24 lg:py-32">
         <div className="container mx-auto px-4 text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -70,8 +70,8 @@ export default function ChiSiamoPage() {
             <h1 className="text-4xl lg:text-6xl font-bold tracking-tight">
               Chi Siamo
             </h1>
-            <p className="mt-6 text-lg lg:text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-              Gaurosa nasce dall&apos;idea di unire i nomi dei nostri genitori: <strong className="text-amber-300">Gau</strong>denzio e <strong className="text-amber-300">Rosa</strong>nna, 
+            <p className="mt-6 text-lg lg:text-xl text-white/80 max-w-3xl mx-auto leading-relaxed">
+              Gaurosa nasce dall&apos;idea di unire i nomi dei nostri genitori: <strong className="text-brand-gold">Gau</strong>denzio e <strong className="text-brand-gold">Rosa</strong>nna, 
               un riconoscimento che ci piaceva dar loro con significato di unione familiare.
             </p>
           </motion.div>
@@ -146,7 +146,7 @@ export default function ChiSiamoPage() {
                   <span className="text-2xl font-bold text-gray-900">{item.year}</span>
                 </div>
                 <div className="relative flex-shrink-0">
-                  <div className="w-4 h-4 bg-gray-900 rounded-full mt-2" />
+                  <div className="w-4 h-4 bg-brand-rose rounded-full mt-2" />
                   {index < timeline.length - 1 && (
                     <div className="absolute top-6 left-1.5 w-0.5 h-full bg-gray-200" />
                   )}
@@ -238,7 +238,7 @@ export default function ChiSiamoPage() {
                 transition={{ delay: index * 0.1 }}
                 className="text-center p-6"
               >
-                <div className="inline-flex items-center justify-center w-14 h-14 bg-gray-900 text-white rounded-full mb-4">
+                <div className="inline-flex items-center justify-center w-14 h-14 bg-brand-rose text-white rounded-full mb-4">
                   <value.icon className="w-6 h-6" />
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">{value.title}</h3>
@@ -250,7 +250,7 @@ export default function ChiSiamoPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-16 lg:py-24 bg-gray-900 text-white">
+      <section className="py-16 lg:py-24 bg-brand-rose text-white">
         <div className="container mx-auto px-4 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -260,12 +260,12 @@ export default function ChiSiamoPage() {
             <h2 className="text-3xl lg:text-4xl font-bold">
               Scopri le Nostre Creazioni
             </h2>
-            <p className="mt-4 text-gray-400 max-w-xl mx-auto">
+            <p className="mt-4 text-white/70 max-w-xl mx-auto">
               Ogni gioiello racconta una storia. Trova il tuo nella nostra collezione.
             </p>
             <div className="mt-8">
               <Link href="/prodotti">
-                <Button size="lg" className="bg-white text-gray-900 hover:bg-gray-100">
+                <Button size="lg" className="bg-white text-brand-rose hover:bg-brand-pink-light">
                   Esplora la Collezione
                 </Button>
               </Link>

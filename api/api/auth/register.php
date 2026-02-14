@@ -20,6 +20,7 @@ $password = $data['password'] ?? '';
 $firstName = trim($data['firstName'] ?? '');
 $lastName = trim($data['lastName'] ?? '');
 $phone = trim($data['phone'] ?? '');
+$privacyConsent = $data['privacyConsent'] ?? false;
 $marketingConsent = $data['marketingConsent'] ?? false;
 
 // Validazioni
@@ -33,6 +34,11 @@ if (strlen($password) < 8) {
 
 if (empty($firstName) || empty($lastName)) {
     jsonResponse(['success' => false, 'error' => 'Nome e cognome sono obbligatori'], 400);
+}
+
+// Privacy consent è obbligatorio per legge (GDPR)
+if (!$privacyConsent) {
+    jsonResponse(['success' => false, 'error' => 'Devi accettare la Privacy Policy per registrarti'], 400);
 }
 
 try {
@@ -56,12 +62,16 @@ try {
     $stmt = $pdo->prepare("
         INSERT INTO customers (
             email, password, first_name, last_name, phone,
+            auth_provider,
             email_verified, verification_token, token_expires_at,
+            privacy_consent, privacy_consent_at,
             marketing_consent, consented_at, from_website,
             created_at, updated_at
         ) VALUES (
             ?, ?, ?, ?, ?,
+            'email',
             0, ?, ?,
+            1, NOW(),
             ?, ?, 1,
             NOW(), NOW()
         )

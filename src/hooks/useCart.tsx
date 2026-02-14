@@ -5,6 +5,7 @@ import { Cart, CartItem, Product, ProductVariant } from '@/types';
 
 interface CartContextType {
   cart: Cart;
+  isLoaded: boolean;
   addToCart: (product: Product, variant?: ProductVariant, quantity?: number) => void;
   removeFromCart: (productCode: string, variantSku?: string) => void;
   updateQuantity: (productCode: string, quantity: number, variantSku?: string) => void;
@@ -15,8 +16,12 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 const CART_STORAGE_KEY = 'gaurosa-cart';
-const SHIPPING_COST = 9.90; // Spedizione fissa
+const SHIPPING_COST = 5.90; // Spedizione standard
+const FREE_SHIPPING_THRESHOLD = 45; // Spedizione gratuita sopra questa soglia
 const TAX_RATE = 0.22; // IVA 22%
+
+// Exported for use in UI components (progress bar, etc.)
+export { SHIPPING_COST, FREE_SHIPPING_THRESHOLD };
 
 function calculateTotals(items: CartItem[]): Omit<Cart, 'items'> {
   const subtotal = items.reduce((sum, item) => {
@@ -24,7 +29,8 @@ function calculateTotals(items: CartItem[]): Omit<Cart, 'items'> {
     return sum + price * item.quantity;
   }, 0);
 
-  const shipping = items.length > 0 ? SHIPPING_COST : 0;
+  // Free shipping if subtotal >= threshold
+  const shipping = items.length > 0 && subtotal < FREE_SHIPPING_THRESHOLD ? SHIPPING_COST : 0;
   const taxableAmount = subtotal + shipping;
   const tax = taxableAmount * TAX_RATE / (1 + TAX_RATE); // IVA già inclusa
   const total = subtotal + shipping;
@@ -40,6 +46,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     tax: 0,
     total: 0,
   });
+  const [isLoaded, setIsLoaded] = useState(false);
 
   // Carica carrello da localStorage
   useEffect(() => {
@@ -52,6 +59,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         console.error('Errore caricamento carrello:', e);
       }
     }
+    setIsLoaded(true);
   }, []);
 
   // Salva carrello in localStorage
@@ -119,7 +127,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   return (
     <CartContext.Provider
-      value={{ cart, addToCart, removeFromCart, updateQuantity, clearCart, itemCount }}
+      value={{ cart, isLoaded, addToCart, removeFromCart, updateQuantity, clearCart, itemCount }}
     >
       {children}
     </CartContext.Provider>

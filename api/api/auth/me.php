@@ -20,6 +20,7 @@ try {
     // Ottieni dati aggiornati del cliente
     $stmt = $pdo->prepare("
         SELECT id, email, first_name, last_name, phone,
+               auth_provider, avatar_url, email_verified,
                customer_type, ragione_sociale, codice_fiscale, partita_iva,
                billing_address, billing_city, billing_province, billing_postcode, billing_country,
                shipping_address, shipping_city, shipping_province, shipping_postcode, shipping_country,
@@ -43,7 +44,9 @@ try {
             'firstName' => $customer['first_name'],
             'lastName' => $customer['last_name'],
             'phone' => $customer['phone'],
-            'emailVerified' => true,
+            'emailVerified' => (bool)$customer['email_verified'],
+            'avatarUrl' => $customer['avatar_url'],
+            'authProvider' => $customer['auth_provider'] ?? 'email',
             'customerType' => $customer['customer_type'],
             'ragioneSociale' => $customer['ragione_sociale'],
             'codiceFiscale' => $customer['codice_fiscale'],

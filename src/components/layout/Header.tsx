@@ -4,8 +4,19 @@ import Link from 'next/link';
 import { useState, useRef, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, ShoppingBag, Search, User, ArrowRight } from 'lucide-react';
+import { Menu, X, ShoppingBag, Search, User, ArrowRight, ChevronDown } from 'lucide-react';
 import { useCart } from '@/hooks/useCart';
+import { fetchCollections } from '@/lib/api';
+
+interface Collection {
+  id: number;
+  name: string;
+  slug: string;
+  description: string | null;
+  image_url: string | null;
+  is_featured: boolean;
+  product_count: number;
+}
 
 // Sottocategorie principali dei Gioielli (ordine alfabetico)
 const navigation = [
@@ -29,11 +40,51 @@ function HeaderContent() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [collectionsOpen, setCollectionsOpen] = useState(false);
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const collectionsRef = useRef<HTMLDivElement>(null);
+  const collectionsTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const { itemCount } = useCart();
 
   // Active sottocategoria from URL for highlighting nav links
   const activeSottocategoria = searchParams.get('sottocategoria') || '';
+  const activeCollezione = searchParams.get('collezione') || '';
+
+  // Fetch collections on mount
+  useEffect(() => {
+    async function loadCollections() {
+      try {
+        const res = await fetchCollections();
+        if (res.success && res.data) {
+          setCollections(res.data);
+        }
+      } catch (error) {
+        console.error('Error loading collections:', error);
+      }
+    }
+    loadCollections();
+  }, []);
+
+  // Close collections dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (collectionsRef.current && !collectionsRef.current.contains(e.target as Node)) {
+        setCollectionsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleCollectionsEnter = useCallback(() => {
+    if (collectionsTimeoutRef.current) clearTimeout(collectionsTimeoutRef.current);
+    setCollectionsOpen(true);
+  }, []);
+
+  const handleCollectionsLeave = useCallback(() => {
+    collectionsTimeoutRef.current = setTimeout(() => setCollectionsOpen(false), 200);
+  }, []);
 
   // Focus input when search opens
   useEffect(() => {
@@ -122,6 +173,65 @@ function HeaderContent() {
                   </Link>
                 );
               })}
+
+              {/* Collections Dropdown */}
+              {collections.length > 0 && (
+                <div
+                  ref={collectionsRef}
+                  className="relative"
+                  onMouseEnter={handleCollectionsEnter}
+                  onMouseLeave={handleCollectionsLeave}
+                >
+                  <button
+                    onClick={() => setCollectionsOpen(!collectionsOpen)}
+                    className={`text-sm font-medium transition-colors relative group flex items-center gap-1 ${
+                      activeCollezione
+                        ? 'text-brand-rose'
+                        : 'text-brand-text/80 hover:text-brand-rose'
+                    }`}
+                  >
+                    Collezioni
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${collectionsOpen ? 'rotate-180' : ''}`} />
+                    <span className={`absolute -bottom-1 left-0 h-0.5 bg-brand-rose transition-all ${
+                      activeCollezione ? 'w-full' : 'w-0 group-hover:w-full'
+                    }`} />
+                  </button>
+
+                  <AnimatePresence>
+                    {collectionsOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 8 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute top-full left-1/2 -translate-x-1/2 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden z-50"
+                      >
+                        <div className="py-2">
+                          {collections.map((collection) => (
+                            <Link
+                              key={collection.id}
+                              href={`/prodotti?collezione=${collection.slug}`}
+                              onClick={() => setCollectionsOpen(false)}
+                              className={`flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${
+                                activeCollezione === collection.slug
+                                  ? 'bg-brand-pink-light text-brand-rose font-medium'
+                                  : 'text-brand-text/80 hover:bg-brand-pink-light/50 hover:text-brand-rose'
+                              }`}
+                            >
+                              <span>{collection.name}</span>
+                              {collection.product_count > 0 && (
+                                <span className="text-xs text-brand-text/40 bg-brand-pink/50 px-1.5 py-0.5 rounded-full">
+                                  {collection.product_count}
+                                </span>
+                              )}
+                            </Link>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
             </div>
 
             {/* Desktop Actions */}
@@ -215,6 +325,37 @@ function HeaderContent() {
                     </Link>
                   );
                 })}
+
+                {/* Collections in mobile menu */}
+                {collections.length > 0 && (
+                  <div className="pt-4 border-t border-brand-pink-border/30">
+                    <p className="text-xs font-semibold text-brand-text/50 uppercase tracking-wider mb-3">
+                      Collezioni
+                    </p>
+                    <div className="space-y-3 pl-1">
+                      {collections.map((collection) => (
+                        <Link
+                          key={collection.id}
+                          href={`/prodotti?collezione=${collection.slug}`}
+                          onClick={() => setMobileMenuOpen(false)}
+                          className={`block text-base font-medium ${
+                            activeCollezione === collection.slug
+                              ? 'text-brand-rose border-l-2 border-brand-rose pl-3'
+                              : 'text-brand-text/80 hover:text-brand-rose'
+                          }`}
+                        >
+                          {collection.name}
+                          {collection.product_count > 0 && (
+                            <span className="ml-2 text-xs text-brand-text/40">
+                              ({collection.product_count})
+                            </span>
+                          )}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="pt-4 border-t border-brand-pink-border/30">
                   <Link
                     href="/account"

@@ -48,6 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $priceMin = $_GET['price_min'] ?? null;
         $priceMax = $_GET['price_max'] ?? null;
         $tag = $_GET['tag'] ?? null;
+        $collection = $_GET['collezione'] ?? $_GET['collection'] ?? null;
         $sort = $_GET['sort'] ?? 'newest';
         
         // Paginazione (page-based, 1-indexed)
@@ -177,6 +178,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 JOIN tags tg ON pt.tag_id = tg.id 
                 WHERE pt.product_id = p.id AND tg.code IN (' . implode(',', $placeholders) . ')
             )';
+        }
+        
+        // Collezione (per slug)
+        if ($collection) {
+            $where[] = 'EXISTS (
+                SELECT 1 FROM product_collections pc 
+                JOIN collections c ON pc.collection_id = c.id 
+                WHERE pc.product_id = p.id AND c.slug = :collection AND c.is_active = 1
+            )';
+            $params['collection'] = $collection;
         }
         
         // ============================================

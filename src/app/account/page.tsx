@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { User, Mail, Lock, Eye, EyeOff, Loader2, LogOut, Package, Heart, Settings } from 'lucide-react';
 import Button from '@/components/ui/Button';
+import SocialLoginButtons from '@/components/auth/SocialLoginButtons';
 
 interface UserData {
   id: number;
@@ -13,6 +14,8 @@ interface UserData {
   firstName: string | null;
   lastName: string | null;
   emailVerified: boolean;
+  avatarUrl?: string | null;
+  authProvider?: string;
 }
 
 export default function AccountPage() {
@@ -33,6 +36,7 @@ export default function AccountPage() {
     lastName: '',
     phone: '',
     confirmPassword: '',
+    privacyConsent: false,
     marketingConsent: false,
   });
 
@@ -85,6 +89,12 @@ export default function AccountPage() {
         }
       } else {
         // Register
+        if (!formData.privacyConsent) {
+          setError('Devi accettare la Privacy Policy per registrarti');
+          setLoading(false);
+          return;
+        }
+
         if (formData.password !== formData.confirmPassword) {
           setError('Le password non coincidono');
           setLoading(false);
@@ -101,6 +111,7 @@ export default function AccountPage() {
             firstName: formData.firstName,
             lastName: formData.lastName,
             phone: formData.phone,
+            privacyConsent: formData.privacyConsent,
             marketingConsent: formData.marketingConsent,
           }),
         });
@@ -172,9 +183,18 @@ export default function AccountPage() {
             <div className="bg-white rounded-xl p-6 shadow-sm mb-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
-                    <User className="w-8 h-8 text-gray-400" />
-                  </div>
+                  {user.avatarUrl ? (
+                    <img
+                      src={user.avatarUrl}
+                      alt="Avatar"
+                      className="w-16 h-16 rounded-full object-cover"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+                      <User className="w-8 h-8 text-gray-400" />
+                    </div>
+                  )}
                   <div>
                     <h1 className="text-2xl font-bold text-gray-900">
                       Ciao, {user.firstName || 'Cliente'}!
@@ -241,7 +261,7 @@ export default function AccountPage() {
               onClick={() => { setIsLogin(true); setError(''); setSuccess(''); }}
               className={`flex-1 pb-3 text-center font-medium transition-colors border-b-2 ${
                 isLogin
-                  ? 'text-gray-900 border-gray-900'
+                  ? 'text-brand-rose border-brand-rose'
                   : 'text-gray-400 border-transparent hover:text-gray-600'
               }`}
             >
@@ -251,7 +271,7 @@ export default function AccountPage() {
               onClick={() => { setIsLogin(false); setError(''); setSuccess(''); }}
               className={`flex-1 pb-3 text-center font-medium transition-colors border-b-2 ${
                 !isLogin
-                  ? 'text-gray-900 border-gray-900'
+                  ? 'text-brand-rose border-brand-rose'
                   : 'text-gray-400 border-transparent hover:text-gray-600'
               }`}
             >
@@ -286,7 +306,7 @@ export default function AccountPage() {
                       value={formData.firstName}
                       onChange={handleChange}
                       required={!isLogin}
-                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-rose focus:border-transparent"
                     />
                   </div>
                   <div>
@@ -299,7 +319,7 @@ export default function AccountPage() {
                       value={formData.lastName}
                       onChange={handleChange}
                       required={!isLogin}
-                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-rose focus:border-transparent"
                     />
                   </div>
                 </div>
@@ -315,7 +335,7 @@ export default function AccountPage() {
                     onChange={handleChange}
                     required={!isLogin}
                     placeholder="+39 123 456 7890"
-                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-rose focus:border-transparent"
                   />
                 </div>
               </>
@@ -334,7 +354,7 @@ export default function AccountPage() {
                   value={formData.email}
                   onChange={handleChange}
                   required
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-rose focus:border-transparent"
                 />
               </div>
             </div>
@@ -353,7 +373,7 @@ export default function AccountPage() {
                   onChange={handleChange}
                   required
                   minLength={8}
-                  className="w-full pl-10 pr-10 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                  className="w-full pl-10 pr-10 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-rose focus:border-transparent"
                 />
                 <button
                   type="button"
@@ -384,13 +404,38 @@ export default function AccountPage() {
                     value={formData.confirmPassword}
                     onChange={handleChange}
                     required={!isLogin}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                    className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-rose focus:border-transparent"
                   />
                 </div>
               </div>
             )}
 
-            {/* Marketing consent (register only) */}
+            {/* Privacy consent (register only - OBBLIGATORIO) */}
+            {!isLogin && (
+              <label className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  name="privacyConsent"
+                  checked={formData.privacyConsent}
+                  onChange={handleChange}
+                  required
+                  className="mt-1 w-4 h-4 rounded border-gray-300 text-brand-rose focus:ring-brand-rose"
+                />
+                <span className="text-sm text-gray-700">
+                  Ho letto e accetto la{' '}
+                  <Link href="/privacy" className="text-brand-rose underline hover:text-brand-rose-dark" target="_blank">
+                    Privacy Policy
+                  </Link>{' '}
+                  e i{' '}
+                  <Link href="/termini" className="text-brand-rose underline hover:text-brand-rose-dark" target="_blank">
+                    Termini e Condizioni
+                  </Link>{' '}
+                  <span className="text-red-500">*</span>
+                </span>
+              </label>
+            )}
+
+            {/* Marketing consent (register only - opzionale) */}
             {!isLogin && (
               <label className="flex items-start gap-3">
                 <input
@@ -398,7 +443,7 @@ export default function AccountPage() {
                   name="marketingConsent"
                   checked={formData.marketingConsent}
                   onChange={handleChange}
-                  className="mt-1 w-4 h-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
+                  className="mt-1 w-4 h-4 rounded border-gray-300 text-brand-rose focus:ring-brand-rose"
                 />
                 <span className="text-sm text-gray-600">
                   Desidero ricevere offerte esclusive e novità via email
@@ -435,17 +480,48 @@ export default function AccountPage() {
             </Button>
           </form>
 
-          {/* Terms (register only) */}
-          {!isLogin && (
-            <p className="mt-4 text-xs text-gray-500 text-center">
-              Registrandoti accetti i nostri{' '}
-              <Link href="/termini" className="underline">
+          {/* Social login divider + buttons */}
+          <div className="mt-6">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="bg-white px-4 text-gray-400">oppure</span>
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <SocialLoginButtons
+                onSuccess={(user) => {
+                  setUser(user);
+                  setSuccess('Accesso effettuato!');
+                  setError('');
+                }}
+                onError={(errorMsg) => {
+                  setError(errorMsg);
+                  setSuccess('');
+                }}
+              />
+            </div>
+
+            {/* Privacy notice for social login */}
+            <p className="mt-3 text-xs text-gray-400 text-center">
+              Continuando con Google accetti i nostri{' '}
+              <Link href="/termini" className="underline hover:text-gray-600">
                 Termini e Condizioni
               </Link>{' '}
               e la{' '}
-              <Link href="/privacy" className="underline">
+              <Link href="/privacy" className="underline hover:text-gray-600">
                 Privacy Policy
               </Link>
+            </p>
+          </div>
+
+          {/* Note campi obbligatori (register only) */}
+          {!isLogin && (
+            <p className="mt-4 text-xs text-gray-400 text-center">
+              I campi contrassegnati con <span className="text-red-500">*</span> sono obbligatori
             </p>
           )}
         </div>

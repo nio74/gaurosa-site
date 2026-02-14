@@ -1,3 +1,9 @@
+# Blocca accesso diretto a secrets.php
+<Files "secrets.php">
+    Order Allow,Deny
+    Deny from all
+</Files>
+
 # API Routing per Gaurosa.it
 # Riscrive le richieste senza .php
 
