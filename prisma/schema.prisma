@@ -435,7 +435,10 @@ model Customer {
   phone     String? @db.VarChar(50)
 
   // === AUTENTICAZIONE ===
-  password          String?   @db.VarChar(255) // Hash bcrypt (null = guest checkout)
+  password          String?   @db.VarChar(255) // Hash bcrypt (null = guest checkout o OAuth)
+  authProvider      String    @default("email") @map("auth_provider") @db.VarChar(20) // email, google, apple
+  providerId        String?   @map("provider_id") @db.VarChar(255) // ID univoco dal provider OAuth (sub)
+  avatarUrl         String?   @map("avatar_url") @db.VarChar(500) // Foto profilo da Google/Apple
   emailVerified     Boolean   @default(false) @map("email_verified")
   emailVerifiedAt   DateTime? @map("email_verified_at")
   verificationToken String?   @unique @map("verification_token") @db.VarChar(100)
@@ -463,7 +466,9 @@ model Customer {
   shippingPostcode String? @map("shipping_postcode") @db.VarChar(20)
   shippingCountry  String? @map("shipping_country") @db.VarChar(2)
 
-  // === PREFERENZE ===
+  // === CONSENSI ===
+  privacyConsent   Boolean   @default(false) @map("privacy_consent")
+  privacyConsentAt DateTime? @map("privacy_consent_at")
   marketingConsent Boolean   @default(false) @map("marketing_consent")
   consentedAt      DateTime? @map("consented_at")
 
@@ -486,6 +491,8 @@ model Customer {
   @@index([emailVerified])
   @@index([syncStatus])
   @@index([fromWebsite])
+  @@index([authProvider])
+  @@index([providerId])
   @@map("customers")
 }
 
@@ -594,6 +601,10 @@ model Order {
   paidAt      DateTime? @map("paid_at")
   shippedAt   DateTime? @map("shipped_at")
   completedAt DateTime? @map("completed_at")
+
+  // === EMAIL ===
+  confirmationEmailSent   Boolean   @default(false) @map("confirmation_email_sent")
+  confirmationEmailSentAt DateTime? @map("confirmation_email_sent_at")
 
   // === SYNC CON MAZGEST ===
   sentToMazgest Boolean   @default(false) @map("sent_to_mazgest")

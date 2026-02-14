@@ -30,7 +30,7 @@ export default function SpedizioniPage() {
   return (
     <div className="min-h-screen">
       {/* Hero */}
-      <section className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white py-24 lg:py-32">
+      <section className="bg-gradient-to-br from-brand-rose via-brand-rose-dark to-brand-rose text-white py-24 lg:py-32">
         <div className="container mx-auto px-4 text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -40,7 +40,7 @@ export default function SpedizioniPage() {
             <h1 className="text-4xl lg:text-6xl font-bold tracking-tight">
               Spedizioni
             </h1>
-            <p className="mt-6 text-lg text-gray-300 max-w-2xl mx-auto">
+            <p className="mt-6 text-lg text-white/80 max-w-2xl mx-auto">
               Spedizione gratuita a partire da 45 €. Consegna in 24/72 ore in tutta Italia.
             </p>
           </motion.div>
@@ -60,7 +60,7 @@ export default function SpedizioniPage() {
                 transition={{ delay: index * 0.1 }}
                 className="text-center p-6 bg-gray-50 rounded-2xl"
               >
-                <div className="inline-flex items-center justify-center w-12 h-12 bg-gray-900 text-white rounded-xl mb-4">
+                <div className="inline-flex items-center justify-center w-12 h-12 bg-brand-rose text-white rounded-xl mb-4">
                   <item.icon className="w-5 h-5" />
                 </div>
                 <h3 className="font-semibold text-gray-900 mb-1">{item.title}</h3>
@@ -223,10 +223,10 @@ export default function SpedizioniPage() {
               </h2>
               <div className="bg-white rounded-xl shadow-sm overflow-hidden">
                 <table className="w-full">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-brand-pink-light">
                     <tr>
-                      <th className="text-left px-6 py-3 text-sm font-semibold text-gray-900">Servizio</th>
-                      <th className="text-right px-6 py-3 text-sm font-semibold text-gray-900">Costo</th>
+                      <th className="text-left px-6 py-3 text-sm font-semibold text-brand-text">Servizio</th>
+                      <th className="text-right px-6 py-3 text-sm font-semibold text-brand-text">Costo</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">

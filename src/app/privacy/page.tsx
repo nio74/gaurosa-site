@@ -8,7 +8,7 @@ export default function PrivacyPage() {
   return (
     <div className="min-h-screen">
       {/* Hero */}
-      <section className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white py-24 lg:py-28">
+      <section className="bg-gradient-to-br from-brand-rose via-brand-rose-dark to-brand-rose text-white py-24 lg:py-28">
         <div className="container mx-auto px-4 text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -18,7 +18,7 @@ export default function PrivacyPage() {
             <h1 className="text-4xl lg:text-5xl font-bold tracking-tight">
               Informativa sulla Privacy
             </h1>
-            <p className="mt-4 text-gray-300">
+            <p className="mt-4 text-white/80">
               Ai sensi del Regolamento UE 2016/679 (GDPR)
             </p>
           </motion.div>
@@ -35,7 +35,7 @@ export default function PrivacyPage() {
               className="space-y-10"
             >
               {/* Ultimo aggiornamento */}
-              <p className="text-sm text-gray-400">Ultimo aggiornamento: 11 febbraio 2026</p>
+              <p className="text-sm text-gray-400">Ultimo aggiornamento: 13 febbraio 2026</p>
 
               {/* Titolare */}
               <div className="bg-gray-50 rounded-xl p-6">
@@ -91,6 +91,16 @@ export default function PrivacyPage() {
                   </div>
 
                   <div className="bg-gray-50 rounded-lg p-4">
+                    <h3 className="font-semibold text-gray-900 text-sm mb-2">Dati da servizi di autenticazione terzi (Google Sign-In)</h3>
+                    <p className="text-sm text-gray-600">
+                      Se scegli di accedere tramite Google Sign-In, riceviamo dal tuo account Google: nome, cognome, 
+                      indirizzo email e immagine del profilo. Non accediamo alla tua password Google, ai tuoi contatti, 
+                      alle tue email o ad altri dati del tuo account. L&apos;accesso tramite Google è facoltativo e puoi 
+                      sempre registrarti con email e password.
+                    </p>
+                  </div>
+
+                  <div className="bg-gray-50 rounded-lg p-4">
                     <h3 className="font-semibold text-gray-900 text-sm mb-2">Dati di pagamento</h3>
                     <p className="text-sm text-gray-600">
                       I dati relativi ai pagamenti (numero carta di credito, dati PayPal, ecc.) sono gestiti 
@@ -109,7 +119,7 @@ export default function PrivacyPage() {
                   {[
                     { title: 'Esecuzione del contratto', desc: 'Gestione degli ordini, spedizioni, fatturazione, assistenza post-vendita, gestione resi e garanzie.' },
                     { title: 'Obblighi di legge', desc: 'Adempimenti fiscali, contabili e normativi previsti dalla legge italiana ed europea.' },
-                    { title: 'Registrazione e autenticazione', desc: 'Creazione e gestione dell\'account utente sul Sito.' },
+                    { title: 'Registrazione e autenticazione', desc: 'Creazione e gestione dell\'account utente sul Sito, anche tramite servizi terzi come Google Sign-In.' },
                     { title: 'Comunicazioni di servizio', desc: 'Invio di conferme d\'ordine, aggiornamenti sulla spedizione, comunicazioni relative al servizio.' },
                     { title: 'Marketing (previo consenso)', desc: 'Invio di newsletter, promozioni, offerte personalizzate. Il consenso è facoltativo e revocabile in qualsiasi momento.' },
                     { title: 'Miglioramento del servizio', desc: 'Analisi statistiche anonime sull\'utilizzo del Sito per migliorare l\'esperienza utente.' },
@@ -156,6 +166,7 @@ export default function PrivacyPage() {
                   {[
                     'Corrieri e servizi di spedizione (per la consegna degli ordini)',
                     'Fornitori di servizi di pagamento (Stripe, PayPal)',
+                    'Servizi di autenticazione (Google Sign-In - Google Ireland Limited)',
                     'Servizi di hosting e infrastruttura IT (Hostinger)',
                     'Consulenti fiscali e commercialisti (per obblighi di legge)',
                     'Autorità competenti (se richiesto dalla legge)',

@@ -28,6 +28,19 @@ const nextConfig: NextConfig = {
   env: {
     NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL || 'https://gaurosa.it',
   },
+
+  // Proxy API calls to XAMPP in development
+  // In production, .htaccess handles routing to PHP files
+  ...(!isProd && {
+    async rewrites() {
+      return [
+        {
+          source: '/api/:path*',
+          destination: 'http://localhost/gaurosa-site/api/:path*',
+        },
+      ];
+    },
+  }),
 };
 
 export default nextConfig;

@@ -8,7 +8,7 @@ export default function CookiePage() {
   return (
     <div className="min-h-screen">
       {/* Hero */}
-      <section className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white py-24 lg:py-28">
+      <section className="bg-gradient-to-br from-brand-rose via-brand-rose-dark to-brand-rose text-white py-24 lg:py-28">
         <div className="container mx-auto px-4 text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -18,7 +18,7 @@ export default function CookiePage() {
             <h1 className="text-4xl lg:text-5xl font-bold tracking-tight">
               Cookie Policy
             </h1>
-            <p className="mt-4 text-gray-300">
+            <p className="mt-4 text-white/80">
               Informativa sull&apos;utilizzo dei cookie su gaurosa.it
             </p>
           </motion.div>

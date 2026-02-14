@@ -15,7 +15,7 @@ export default function ResiPage() {
   return (
     <div className="min-h-screen">
       {/* Hero */}
-      <section className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white py-24 lg:py-32">
+      <section className="bg-gradient-to-br from-brand-rose via-brand-rose-dark to-brand-rose text-white py-24 lg:py-32">
         <div className="container mx-auto px-4 text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -25,7 +25,7 @@ export default function ResiPage() {
             <h1 className="text-4xl lg:text-6xl font-bold tracking-tight">
               Resi e Garanzia
             </h1>
-            <p className="mt-6 text-lg text-gray-300 max-w-2xl mx-auto">
+            <p className="mt-6 text-lg text-white/80 max-w-2xl mx-auto">
               60 giorni per il reso, garanzia gratuita su tutti i prodotti. 
               La tua soddisfazione è la nostra priorità.
             </p>
@@ -41,7 +41,7 @@ export default function ResiPage() {
               <a
                 key={section.id}
                 href={`#${section.id}`}
-                className="inline-flex items-center gap-1.5 px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-full hover:bg-gray-200 transition-colors"
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-pink-light text-brand-text text-sm font-medium rounded-full hover:bg-brand-pink transition-colors"
               >
                 <section.icon className="w-4 h-4" />
                 {section.label}
@@ -65,7 +65,7 @@ export default function ResiPage() {
               className="scroll-mt-32"
             >
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-gray-900 text-white rounded-xl flex items-center justify-center">
+                <div className="w-10 h-10 bg-brand-rose text-white rounded-xl flex items-center justify-center">
                   <RotateCcw className="w-5 h-5" />
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900">Diritto di Recesso</h2>
@@ -136,7 +136,7 @@ export default function ResiPage() {
               className="scroll-mt-32"
             >
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-gray-900 text-white rounded-xl flex items-center justify-center">
+                <div className="w-10 h-10 bg-brand-rose text-white rounded-xl flex items-center justify-center">
                   <Shield className="w-5 h-5" />
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900">Garanzia</h2>
@@ -187,7 +187,7 @@ export default function ResiPage() {
               className="scroll-mt-32"
             >
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-gray-900 text-white rounded-xl flex items-center justify-center">
+                <div className="w-10 h-10 bg-brand-rose text-white rounded-xl flex items-center justify-center">
                   <Scissors className="w-5 h-5" />
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900">Incisione</h2>
@@ -219,7 +219,7 @@ export default function ResiPage() {
               className="scroll-mt-32"
             >
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-gray-900 text-white rounded-xl flex items-center justify-center">
+                <div className="w-10 h-10 bg-brand-rose text-white rounded-xl flex items-center justify-center">
                   <Wrench className="w-5 h-5" />
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900">Modifica Misure</h2>
@@ -258,7 +258,7 @@ export default function ResiPage() {
               className="scroll-mt-32"
             >
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-gray-900 text-white rounded-xl flex items-center justify-center">
+                <div className="w-10 h-10 bg-brand-rose text-white rounded-xl flex items-center justify-center">
                   <Wrench className="w-5 h-5" />
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900">Riparazioni</h2>
@@ -287,16 +287,16 @@ export default function ResiPage() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="bg-gray-900 text-white rounded-2xl p-8 text-center"
+              className="bg-brand-rose text-white rounded-2xl p-8 text-center"
             >
               <h2 className="text-2xl font-bold mb-4">Hai bisogno di assistenza?</h2>
-              <p className="text-gray-400 mb-6">
+              <p className="text-white/70 mb-6">
                 Non esitare a contattarci per qualsiasi domanda su resi, garanzia o riparazioni.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <a
                   href="mailto:info@gaurosa.it"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-gray-900 font-medium rounded-xl hover:bg-gray-100 transition-colors"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-white text-brand-rose font-medium rounded-xl hover:bg-brand-pink-light transition-colors"
                 >
                   <Mail className="w-4 h-4" />
                   info@gaurosa.it

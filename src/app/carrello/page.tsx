@@ -4,8 +4,8 @@ import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, ArrowLeft } from 'lucide-react';
-import { useCart } from '@/hooks/useCart';
+import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, ArrowLeft, Truck, Gift, Package } from 'lucide-react';
+import { useCart, FREE_SHIPPING_THRESHOLD, SHIPPING_COST } from '@/hooks/useCart';
 import Button from '@/components/ui/Button';
 import { formatPrice } from '@/lib/utils';
 
@@ -203,6 +203,73 @@ export default function CartPage() {
                 Riepilogo ordine
               </h2>
 
+              {/* Free Shipping Progress Bar */}
+              {(() => {
+                const isFreeShipping = cart.subtotal >= FREE_SHIPPING_THRESHOLD;
+                const progress = Math.min((cart.subtotal / FREE_SHIPPING_THRESHOLD) * 100, 100);
+                const remaining = FREE_SHIPPING_THRESHOLD - cart.subtotal;
+
+                return (
+                  <div className={`mb-5 p-4 rounded-xl border-2 transition-all duration-500 ${
+                    isFreeShipping
+                      ? 'bg-green-50 border-green-200'
+                      : 'bg-rose-50/50 border-rose-100'
+                  }`}>
+                    {isFreeShipping ? (
+                      /* Spedizione gratuita raggiunta */
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                          <Gift className="w-5 h-5 text-green-600" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-green-800 text-sm">
+                            Complimenti! Spedizione GRATUITA
+                          </p>
+                          <p className="text-xs text-green-600">
+                            Risparmi {formatPrice(SHIPPING_COST)} su questo ordine
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Barra progresso */
+                      <>
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center flex-shrink-0">
+                            <Truck className="w-5 h-5 text-brand-rose" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-800 text-sm">
+                              Ti mancano <span className="text-brand-rose">{formatPrice(remaining)}</span> per la spedizione gratuita!
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Progress bar */}
+                        <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
+                          <motion.div
+                            className="h-full rounded-full"
+                            style={{
+                              background: 'linear-gradient(90deg, #8b1538, #f9c3d5)',
+                            }}
+                            initial={{ width: 0 }}
+                            animate={{ width: `${progress}%` }}
+                            transition={{ duration: 0.8, ease: 'easeOut' }}
+                          />
+                        </div>
+                        <div className="flex justify-between mt-1.5">
+                          <span className="text-xs text-gray-400">
+                            {formatPrice(cart.subtotal)}
+                          </span>
+                          <span className="text-xs text-gray-400">
+                            {formatPrice(FREE_SHIPPING_THRESHOLD)}
+                          </span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
+
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-500">Subtotale</span>
@@ -210,9 +277,14 @@ export default function CartPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Spedizione</span>
-                  <span className="font-medium">
-                    {cart.shipping === 0 ? 'Gratuita' : formatPrice(cart.shipping)}
-                  </span>
+                  {cart.shipping === 0 ? (
+                    <span className="font-medium text-green-600 flex items-center gap-1">
+                      <Package className="w-3.5 h-3.5" />
+                      Gratuita
+                    </span>
+                  ) : (
+                    <span className="font-medium">{formatPrice(cart.shipping)}</span>
+                  )}
                 </div>
                 <div className="flex justify-between text-xs text-gray-400">
                   <span>di cui IVA (22%)</span>
@@ -236,15 +308,20 @@ export default function CartPage() {
                 </Button>
               </Link>
 
-              {/* Info box */}
-              <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                <p className="text-xs text-gray-500 text-center">
-                  Spedizione gratuita per ordini superiori a 100EUR
-                </p>
+              {/* Garanzie */}
+              <div className="mt-5 space-y-2">
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <Truck className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>Spedizione gratuita sopra {formatPrice(FREE_SHIPPING_THRESHOLD)}</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-gray-500">
+                  <Package className="w-3.5 h-3.5 flex-shrink-0" />
+                  <span>Spedizione assicurata e tracciata</span>
+                </div>
               </div>
 
               {/* Payment methods */}
-              <div className="mt-4 flex justify-center gap-2">
+              <div className="mt-4 pt-4 border-t border-gray-100 flex justify-center gap-2">
                 <div className="w-10 h-6 bg-gray-100 rounded flex items-center justify-center text-xs font-bold text-gray-400">
                   VISA
                 </div>

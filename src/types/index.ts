@@ -145,12 +145,24 @@ export interface Address {
   country: string;
 }
 
+export interface InvoiceData {
+  customerType: 'privato' | 'azienda';
+  ragioneSociale?: string;       // Solo azienda
+  codiceFiscale?: string;        // Privato o azienda
+  partitaIva?: string;           // Solo azienda
+  codiceSdi?: string;            // Codice univoco SDI
+  pec?: string;                  // PEC per fatturazione elettronica
+}
+
 export interface CheckoutData {
   customer: CustomerInfo;
-  billingAddress: Address;
-  shippingAddress?: Address;
-  sameAsShipping: boolean;
+  shippingAddress: Address;
+  billingAddress?: Address;       // Solo se diverso da spedizione
+  sameAsBilling: boolean;         // true = fatturazione = spedizione
+  requiresInvoice: boolean;       // Toggle "Richiedi fattura"
+  invoiceData?: InvoiceData;      // Dati fatturazione (se richiesta)
   notes?: string;
+  paymentMethod: 'card' | 'klarna' | 'paypal';
 }
 
 // ============================================

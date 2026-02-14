@@ -65,7 +65,7 @@ export default function ContattiPage() {
   return (
     <div className="min-h-screen">
       {/* Hero */}
-      <section className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white py-24 lg:py-32">
+      <section className="bg-gradient-to-br from-brand-rose via-brand-rose-dark to-brand-rose text-white py-24 lg:py-32">
         <div className="container mx-auto px-4 text-center">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -75,7 +75,7 @@ export default function ContattiPage() {
             <h1 className="text-4xl lg:text-6xl font-bold tracking-tight">
               Contatti
             </h1>
-            <p className="mt-6 text-lg text-gray-300 max-w-2xl mx-auto">
+            <p className="mt-6 text-lg text-white/80 max-w-2xl mx-auto">
               Siamo a tua disposizione per qualsiasi informazione, richiesta o consiglio. 
               Non esitare a contattarci!
             </p>
@@ -102,7 +102,7 @@ export default function ContattiPage() {
                     rel={info.href.startsWith('http') ? 'noopener noreferrer' : undefined}
                     className="block h-full p-6 bg-gray-50 rounded-2xl hover:bg-gray-100 transition-colors group"
                   >
-                    <div className="inline-flex items-center justify-center w-12 h-12 bg-gray-900 text-white rounded-xl mb-4 group-hover:scale-110 transition-transform">
+                    <div className="inline-flex items-center justify-center w-12 h-12 bg-brand-rose text-white rounded-xl mb-4 group-hover:scale-110 transition-transform">
                       <info.icon className="w-5 h-5" />
                     </div>
                     <h3 className="font-semibold text-gray-900 mb-2">{info.title}</h3>
@@ -112,7 +112,7 @@ export default function ContattiPage() {
                   </a>
                 ) : (
                   <div className="h-full p-6 bg-gray-50 rounded-2xl">
-                    <div className="inline-flex items-center justify-center w-12 h-12 bg-gray-900 text-white rounded-xl mb-4">
+                    <div className="inline-flex items-center justify-center w-12 h-12 bg-brand-rose text-white rounded-xl mb-4">
                       <info.icon className="w-5 h-5" />
                     </div>
                     <h3 className="font-semibold text-gray-900 mb-2">{info.title}</h3>

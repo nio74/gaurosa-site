@@ -33,6 +33,17 @@ try {
         jsonResponse(['success' => false, 'error' => 'Credenziali non valide'], 401);
     }
 
+    // Check if user registered via OAuth (no password set)
+    $authProvider = $customer['auth_provider'] ?? 'email';
+    if ($authProvider !== 'email' && empty($customer['password'])) {
+        $providerLabel = $authProvider === 'google' ? 'Google' : ($authProvider === 'apple' ? 'Apple' : $authProvider);
+        jsonResponse([
+            'success' => false,
+            'error' => "Questo account è stato creato con {$providerLabel}. Usa il pulsante \"{$providerLabel}\" per accedere.",
+            'authProvider' => $authProvider
+        ], 401);
+    }
+
     // Verifica password
     if (!password_verify($password, $customer['password'])) {
         jsonResponse(['success' => false, 'error' => 'Credenziali non valide'], 401);

@@ -44,6 +44,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# PHP secrets (credenziali database, API keys, OAuth - NON committare)
+**/secrets.php
+
 # uploads (immagini prodotti - sincronizzate, non committare)
 /public/uploads/products/*
 !/public/uploads/products/.gitkeep

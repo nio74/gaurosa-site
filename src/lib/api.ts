@@ -63,6 +63,7 @@ async function apiFetch(endpoint: string, options?: RequestInit) {
 export async function fetchProducts(params?: {
   categoria?: string;
   sottocategoria?: string;
+  collezione?: string;
   search?: string;
   page?: number;
   limit?: number;
@@ -80,6 +81,7 @@ export async function fetchProducts(params?: {
   
   if (params?.categoria) queryParams.set('categoria', params.categoria);
   if (params?.sottocategoria) queryParams.set('sottocategoria', params.sottocategoria);
+  if (params?.collezione) queryParams.set('collezione', params.collezione);
   if (params?.search) queryParams.set('search', params.search);
   if (params?.page) queryParams.set('page', params.page.toString());
   if (params?.limit) queryParams.set('limit', params.limit.toString());
@@ -147,6 +149,17 @@ export async function fetchFilters(activeFilters?: ActiveFilters) {
   
   const query = queryParams.toString();
   return apiFetch(`api-filters.php${query ? '?' + query : ''}`);
+}
+
+// ============================================
+// COLLEZIONI
+// ============================================
+
+/**
+ * Fetch collezioni attive con conteggio prodotti
+ */
+export async function fetchCollections() {
+  return apiFetch('api-collections.php');
 }
 
 // ============================================

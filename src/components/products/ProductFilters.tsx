@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, X, SlidersHorizontal } from 'lucide-react';
+import { ChevronDown, X, SlidersHorizontal, Loader2 } from 'lucide-react';
 import type { Filter, FilterValue, PriceRange, ActiveFilters } from '@/types';
 import { translateFilterValue, getColorSwatch, formatPrice } from '@/lib/labels';
 
@@ -82,7 +82,6 @@ function CheckboxFilter({
   onChange: (values: string[]) => void;
 }) {
   const toggleValue = (value: string) => {
-    console.log('✅ toggleValue called:', filterCode, value);
     if (selected.includes(value)) {
       onChange(selected.filter((v) => v !== value));
     } else {
@@ -109,8 +108,8 @@ function CheckboxFilter({
             <div
               className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-all flex-shrink-0 ${
                 isSelected
-                  ? 'bg-gray-900 border-gray-900'
-                  : 'border-gray-300 group-hover:border-gray-400'
+                  ? 'bg-brand-rose border-brand-rose'
+                  : 'border-gray-300 group-hover:border-brand-pink-border'
               }`}
             >
               {isSelected && (
@@ -173,8 +172,8 @@ function ColorFilter({
             title={`${label} (${item.count})`}
             className={`relative w-8 h-8 rounded-full transition-all ${
               isSelected
-                ? 'ring-2 ring-gray-900 ring-offset-2'
-                : 'ring-1 ring-gray-200 hover:ring-gray-400'
+                ? 'ring-2 ring-brand-rose ring-offset-2'
+                : 'ring-1 ring-gray-200 hover:ring-brand-pink-border'
             }`}
           >
             <span
@@ -186,7 +185,7 @@ function ColorFilter({
             />
             {isSelected && (
               <span className="absolute inset-0 flex items-center justify-center">
-                <svg className="w-3.5 h-3.5 text-gray-900 drop-shadow-[0_0_2px_rgba(255,255,255,0.8)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <svg className="w-3.5 h-3.5 text-brand-rose drop-shadow-[0_0_2px_rgba(255,255,255,0.8)]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                 </svg>
               </span>
@@ -231,7 +230,7 @@ function TagFilter({
             onClick={() => toggleValue(item.value)}
             className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
               isSelected
-                ? 'ring-2 ring-gray-900 ring-offset-1'
+                ? 'ring-2 ring-brand-rose ring-offset-1'
                 : 'hover:opacity-80'
             }`}
             style={{
@@ -267,7 +266,6 @@ function PriceRangeSlider({
   currentMax?: number;
   onChange: (min: number | undefined, max: number | undefined) => void;
 }) {
-  // Round to nice values
   const sliderMin = Math.floor(min / 10) * 10;
   const sliderMax = Math.ceil(max / 10) * 10;
   
@@ -275,7 +273,6 @@ function PriceRangeSlider({
   const [localMax, setLocalMax] = useState(currentMax ?? sliderMax);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Sync with external changes
   useEffect(() => {
     setLocalMin(currentMin ?? sliderMin);
     setLocalMax(currentMax ?? sliderMax);
@@ -286,7 +283,6 @@ function PriceRangeSlider({
       setLocalMin(newMin);
       setLocalMax(newMax);
 
-      // Debounce the API call
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(() => {
         const effectiveMin = newMin <= sliderMin ? undefined : newMin;
@@ -304,28 +300,23 @@ function PriceRangeSlider({
 
   return (
     <div className="space-y-4">
-      {/* Price display */}
       <div className="flex items-center justify-between text-sm">
         <span className="font-medium text-gray-900">{formatPrice(localMin)}</span>
         <span className="text-gray-400">—</span>
         <span className="font-medium text-gray-900">{formatPrice(localMax)}</span>
       </div>
 
-      {/* Dual range slider */}
       <div className="relative h-6 flex items-center">
-        {/* Track background */}
         <div className="absolute w-full h-1 bg-gray-200 rounded-full" />
         
-        {/* Active track */}
         <div
-          className="absolute h-1 bg-gray-900 rounded-full"
+          className="absolute h-1 bg-brand-rose rounded-full"
           style={{
             left: `${minPercent}%`,
             width: `${maxPercent - minPercent}%`,
           }}
         />
 
-        {/* Min thumb */}
         <input
           type="range"
           min={sliderMin}
@@ -343,7 +334,7 @@ function PriceRangeSlider({
             [&::-webkit-slider-thumb]:rounded-full
             [&::-webkit-slider-thumb]:bg-white
             [&::-webkit-slider-thumb]:border-2
-            [&::-webkit-slider-thumb]:border-gray-900
+            [&::-webkit-slider-thumb]:border-brand-rose
             [&::-webkit-slider-thumb]:cursor-pointer
             [&::-webkit-slider-thumb]:pointer-events-auto
             [&::-webkit-slider-thumb]:shadow-sm
@@ -354,14 +345,13 @@ function PriceRangeSlider({
             [&::-moz-range-thumb]:rounded-full
             [&::-moz-range-thumb]:bg-white
             [&::-moz-range-thumb]:border-2
-            [&::-moz-range-thumb]:border-gray-900
+            [&::-moz-range-thumb]:border-brand-rose
             [&::-moz-range-thumb]:cursor-pointer
             [&::-moz-range-thumb]:pointer-events-auto
           "
           style={{ zIndex: localMin > sliderMax - 100 ? 5 : 3 }}
         />
 
-        {/* Max thumb */}
         <input
           type="range"
           min={sliderMin}
@@ -379,7 +369,7 @@ function PriceRangeSlider({
             [&::-webkit-slider-thumb]:rounded-full
             [&::-webkit-slider-thumb]:bg-white
             [&::-webkit-slider-thumb]:border-2
-            [&::-webkit-slider-thumb]:border-gray-900
+            [&::-webkit-slider-thumb]:border-brand-rose
             [&::-webkit-slider-thumb]:cursor-pointer
             [&::-webkit-slider-thumb]:pointer-events-auto
             [&::-webkit-slider-thumb]:shadow-sm
@@ -390,7 +380,7 @@ function PriceRangeSlider({
             [&::-moz-range-thumb]:rounded-full
             [&::-moz-range-thumb]:bg-white
             [&::-moz-range-thumb]:border-2
-            [&::-moz-range-thumb]:border-gray-900
+            [&::-moz-range-thumb]:border-brand-rose
             [&::-moz-range-thumb]:cursor-pointer
             [&::-moz-range-thumb]:pointer-events-auto
           "
@@ -402,77 +392,7 @@ function PriceRangeSlider({
 }
 
 // ============================================
-// ACTIVE FILTERS BADGES
-// ============================================
-
-function ActiveFiltersBadges({
-  activeFilters,
-  filters,
-  onRemove,
-  onClearAll,
-}: {
-  activeFilters: ActiveFilters;
-  filters: Filter[];
-  onRemove: (filterCode: string, value: string) => void;
-  onClearAll: () => void;
-}) {
-  const badges: { filterCode: string; value: string; label: string }[] = [];
-
-  // Collect all active filter values (sottocategoria excluded - handled by header nav)
-  const arrayFilters: (keyof ActiveFilters)[] = [
-    'material', 'material_color', 'gender', 'stone_type', 'tag',
-  ];
-
-  for (const key of arrayFilters) {
-    const values = activeFilters[key] as string[] | undefined;
-    if (values?.length) {
-      for (const value of values) {
-        const label = translateFilterValue(key, value);
-        badges.push({ filterCode: key, value, label });
-      }
-    }
-  }
-
-  if (activeFilters.price_min !== undefined || activeFilters.price_max !== undefined) {
-    const minLabel = activeFilters.price_min ? formatPrice(activeFilters.price_min) : '';
-    const maxLabel = activeFilters.price_max ? formatPrice(activeFilters.price_max) : '';
-    badges.push({
-      filterCode: 'price',
-      value: 'range',
-      label: `${minLabel} — ${maxLabel}`.trim(),
-    });
-  }
-
-  if (badges.length === 0) return null;
-
-  return (
-    <div className="flex flex-wrap gap-2 mb-4">
-      {badges.map((badge, i) => (
-        <span
-          key={`${badge.filterCode}-${badge.value}-${i}`}
-          className="inline-flex items-center gap-1 px-2.5 py-1 bg-gray-100 text-gray-700 text-xs rounded-full"
-        >
-          {badge.label}
-          <button
-            onClick={() => onRemove(badge.filterCode, badge.value)}
-            className="ml-0.5 p-0.5 hover:bg-gray-200 rounded-full transition-colors"
-          >
-            <X className="w-3 h-3" />
-          </button>
-        </span>
-      ))}
-      <button
-        onClick={onClearAll}
-        className="text-xs text-red-500 hover:text-red-700 px-2 py-1 transition-colors"
-      >
-        Rimuovi tutti
-      </button>
-    </div>
-  );
-}
-
-// ============================================
-// MAIN COMPONENT
+// MAIN FILTERS COMPONENT (used inside drawer)
 // ============================================
 
 export default function ProductFilters({
@@ -483,14 +403,12 @@ export default function ProductFilters({
   totalFiltered,
   className = '',
 }: ProductFiltersProps) {
-  // Count total active filters
   const activeCount = Object.entries(activeFilters).reduce((count, [key, value]) => {
     if (Array.isArray(value)) return count + value.length;
     if (value !== undefined && value !== null) return count + 1;
     return count;
   }, 0);
 
-  // Handler for checkbox/color/tag filters
   const handleArrayFilterChange = useCallback(
     (filterCode: string, values: string[]) => {
       onFilterChange({
@@ -501,7 +419,6 @@ export default function ProductFilters({
     [activeFilters, onFilterChange]
   );
 
-  // Handler for price range
   const handlePriceChange = useCallback(
     (min: number | undefined, max: number | undefined) => {
       onFilterChange({
@@ -513,31 +430,6 @@ export default function ProductFilters({
     [activeFilters, onFilterChange]
   );
 
-  // Remove single filter value
-  const handleRemoveFilter = useCallback(
-    (filterCode: string, value: string) => {
-      if (filterCode === 'price') {
-        onFilterChange({
-          ...activeFilters,
-          price_min: undefined,
-          price_max: undefined,
-        });
-        return;
-      }
-
-      const currentValues = (activeFilters as any)[filterCode] as string[] | undefined;
-      if (currentValues) {
-        const newValues = currentValues.filter((v: string) => v !== value);
-        onFilterChange({
-          ...activeFilters,
-          [filterCode]: newValues.length > 0 ? newValues : undefined,
-        });
-      }
-    },
-    [activeFilters, onFilterChange]
-  );
-
-  // Clear all filters
   const handleClearAll = useCallback(() => {
     onFilterChange({});
   }, [onFilterChange]);
@@ -545,12 +437,12 @@ export default function ProductFilters({
   return (
     <div className={className}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
-          <SlidersHorizontal className="w-4 h-4 text-gray-500" />
+          <SlidersHorizontal className="w-4 h-4 text-brand-rose" />
           <h3 className="font-semibold text-gray-900">Filtri</h3>
           {activeCount > 0 && (
-            <span className="px-1.5 py-0.5 bg-gray-900 text-white text-xs rounded-full">
+            <span className="px-1.5 py-0.5 bg-brand-rose text-white text-xs rounded-full">
               {activeCount}
             </span>
           )}
@@ -558,24 +450,15 @@ export default function ProductFilters({
         {activeCount > 0 && (
           <button
             onClick={handleClearAll}
-            className="text-xs text-red-500 hover:text-red-700 transition-colors"
+            className="text-xs text-brand-rose hover:text-brand-rose-dark font-medium transition-colors"
           >
             Rimuovi tutto
           </button>
         )}
       </div>
 
-      {/* Active filters badges */}
-      <ActiveFiltersBadges
-        activeFilters={activeFilters}
-        filters={filters}
-        onRemove={handleRemoveFilter}
-        onClearAll={handleClearAll}
-      />
-
       {/* Filter sections */}
       {filters.map((filter) => {
-        // Skip empty filters
         if (filter.values.length === 0) return null;
 
         const selectedValues = (activeFilters as any)[filter.code] as string[] | undefined;
@@ -635,10 +518,10 @@ export default function ProductFilters({
 }
 
 // ============================================
-// MOBILE FILTERS DRAWER
+// FILTERS DRAWER (slide from right — desktop & mobile)
 // ============================================
 
-export function MobileFiltersDrawer({
+export function FiltersDrawer({
   isOpen,
   onClose,
   filters,
@@ -646,6 +529,7 @@ export function MobileFiltersDrawer({
   activeFilters,
   onFilterChange,
   totalFiltered,
+  loading = false,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -654,6 +538,7 @@ export function MobileFiltersDrawer({
   activeFilters: ActiveFilters;
   onFilterChange: (filters: ActiveFilters) => void;
   totalFiltered: number;
+  loading?: boolean;
 }) {
   // Prevent body scroll when drawer is open
   useEffect(() => {
@@ -677,20 +562,23 @@ export function MobileFiltersDrawer({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/50 z-40"
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
           />
 
-          {/* Drawer */}
+          {/* Drawer — slides from right */}
           <motion.div
-            initial={{ x: '-100%' }}
+            initial={{ x: '100%' }}
             animate={{ x: 0 }}
-            exit={{ x: '-100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed inset-y-0 left-0 w-full max-w-sm bg-white z-50 flex flex-col shadow-xl"
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 28, stiffness: 250 }}
+            className="fixed inset-y-0 right-0 w-full max-w-md bg-white z-50 flex flex-col shadow-2xl"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-4 border-b">
-              <h2 className="text-lg font-bold text-gray-900">Filtri</h2>
+            <div className="flex items-center justify-between px-6 py-5 border-b">
+              <div className="flex items-center gap-2">
+                <SlidersHorizontal className="w-5 h-5 text-brand-rose" />
+                <h2 className="text-lg font-bold text-gray-900">Filtri</h2>
+              </div>
               <button
                 onClick={onClose}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
@@ -700,21 +588,27 @@ export function MobileFiltersDrawer({
             </div>
 
             {/* Scrollable content */}
-            <div className="flex-1 overflow-y-auto px-4 py-4">
-              <ProductFilters
-                filters={filters}
-                priceRange={priceRange}
-                activeFilters={activeFilters}
-                onFilterChange={onFilterChange}
-                totalFiltered={totalFiltered}
-              />
+            <div className="flex-1 overflow-y-auto px-6 py-5">
+              {loading && filters.length === 0 ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-6 h-6 animate-spin text-brand-rose/50" />
+                </div>
+              ) : (
+                <ProductFilters
+                  filters={filters}
+                  priceRange={priceRange}
+                  activeFilters={activeFilters}
+                  onFilterChange={onFilterChange}
+                  totalFiltered={totalFiltered}
+                />
+              )}
             </div>
 
-            {/* Footer */}
-            <div className="px-4 py-4 border-t bg-white">
+            {/* Footer — show results button */}
+            <div className="px-6 py-4 border-t bg-white">
               <button
                 onClick={onClose}
-                className="w-full py-3 bg-gray-900 text-white font-medium rounded-lg hover:bg-gray-800 transition-colors"
+                className="w-full py-3.5 bg-brand-rose text-white font-medium rounded-full hover:bg-brand-rose-dark transition-colors text-sm"
               >
                 Mostra {totalFiltered} prodott{totalFiltered === 1 ? 'o' : 'i'}
               </button>
@@ -725,3 +619,6 @@ export function MobileFiltersDrawer({
     </AnimatePresence>
   );
 }
+
+// Keep backward compatibility export
+export { FiltersDrawer as MobileFiltersDrawer };

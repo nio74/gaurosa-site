@@ -387,6 +387,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
+            // Sync collezione
+            // Remove old collection assignments for this product
+            $pdo->prepare("DELETE FROM product_collections WHERE product_id = ?")->execute([$productId]);
+
+            if (!empty($product['collection'])) {
+                $col = $product['collection'];
+                $colSlug = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $col['name']));
+
+                // Find or create collection
+                $colStmt = $pdo->prepare("SELECT id FROM collections WHERE slug = ?");
+                $colStmt->execute([$colSlug]);
+                $existingCol = $colStmt->fetch();
+
+                if ($existingCol) {
+                    $collectionId = $existingCol['id'];
+                    // Update collection name/description
+                    $pdo->prepare("UPDATE collections SET name = ?, description = ?, updated_at = NOW() WHERE id = ?")
+                        ->execute([$col['name'], $col['description'] ?? null, $collectionId]);
+                } else {
+                    // Create new collection
+                    $pdo->prepare("
+                        INSERT INTO collections (name, slug, description, is_active, is_featured, position, created_at, updated_at)
+                        VALUES (?, ?, ?, 1, 0, 0, NOW(), NOW())
+                    ")->execute([$col['name'], $colSlug, $col['description'] ?? null]);
+                    $collectionId = $pdo->lastInsertId();
+                }
+
+                // Assign product to collection
+                $pdo->prepare("
+                    INSERT INTO product_collections (product_id, collection_id, added_at)
+                    VALUES (?, ?, NOW())
+                ")->execute([$productId, $collectionId]);
+            }
+
             $pdo->commit();
             $processed++;
 
