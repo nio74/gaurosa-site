@@ -17,6 +17,7 @@
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../auth/jwt.php';
 require_once __DIR__ . '/order-email.php';
+require_once __DIR__ . '/stock-helpers.php';
 
 // Handle OPTIONS preflight
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -139,6 +140,14 @@ try {
         $stmt->execute(['id' => $orderId]);
         $order = $stmt->fetch();
         $orderItems = getOrderItems($pdo, $orderId);
+
+        // Deduct stock from products/variants
+        try {
+            $stockResult = deductOrderStock($pdo, $orderId);
+            error_log("[ConfirmOrder] Stock dedotto per ordine #{$orderId}: {$stockResult['deducted']} articoli");
+        } catch (Exception $stockError) {
+            error_log("[ConfirmOrder] ⚠️ Errore deduzione stock (non bloccante): " . $stockError->getMessage());
+        }
 
         // Send order confirmation email (non-blocking - don't fail the response)
         try {
