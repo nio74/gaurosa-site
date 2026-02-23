@@ -1,16 +1,16 @@
 <?php
 /**
- * Conferma ordine dopo pagamento Stripe riuscito
+ * Cattura pagamento PayPal dopo approvazione utente
  * 
- * POST /api/checkout/confirm-order
+ * POST /api/checkout/capture-paypal-order
  * 
  * Body JSON:
  * {
- *   paymentIntentId: 'pi_xxx',
+ *   paypalOrderId: 'PAYPAL_ORDER_ID',
  *   orderId: 123
  * }
  * 
- * Verifica con Stripe che il pagamento sia avvenuto, poi aggiorna l'ordine.
+ * Cattura il pagamento su PayPal, poi aggiorna l'ordine nel database.
  * Returns: {success, order}
  */
 
@@ -31,12 +31,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 $body = getJsonBody();
 
-$paymentIntentId = trim($body['paymentIntentId'] ?? '');
+$paypalOrderId = trim($body['paypalOrderId'] ?? '');
 $orderId = (int)($body['orderId'] ?? 0);
 
 // Validazione
-if (empty($paymentIntentId)) {
-    jsonResponse(['success' => false, 'error' => 'ID pagamento mancante'], 400);
+if (empty($paypalOrderId)) {
+    jsonResponse(['success' => false, 'error' => 'ID ordine PayPal mancante'], 400);
 }
 if ($orderId <= 0) {
     jsonResponse(['success' => false, 'error' => 'ID ordine non valido'], 400);
@@ -64,7 +64,7 @@ try {
     }
 
     // Verifica che il payment_id corrisponda
-    if ($order['payment_id'] !== $paymentIntentId) {
+    if ($order['payment_id'] !== $paypalOrderId) {
         jsonResponse(['success' => false, 'error' => 'Dati pagamento non corrispondenti'], 400);
     }
 
@@ -79,61 +79,78 @@ try {
     }
 
     // =====================================================
-    // VERIFICA PAYMENT INTENT SU STRIPE
+    // OTTIENI ACCESS TOKEN PAYPAL
     // =====================================================
 
-    $ch = curl_init("https://api.stripe.com/v1/payment_intents/{$paymentIntentId}");
+    $authToken = getPayPalAccessToken();
+    if (!$authToken) {
+        jsonResponse(['success' => false, 'error' => 'Errore di connessione a PayPal'], 502);
+    }
+
+    // =====================================================
+    // CATTURA PAGAMENTO SU PAYPAL
+    // =====================================================
+
+    $ch = curl_init(PAYPAL_API_URL . "/v2/checkout/orders/{$paypalOrderId}/capture");
     curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => '{}', // Empty body required
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_HTTPHEADER => [
-            'Authorization: Bearer ' . STRIPE_SECRET_KEY,
+            'Authorization: Bearer ' . $authToken,
+            'Content-Type: application/json',
         ],
         CURLOPT_TIMEOUT => 30,
     ]);
 
-    $stripeResponse = curl_exec($ch);
+    $paypalResponse = curl_exec($ch);
     $curlError = curl_error($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
 
     if ($curlError) {
-        error_log("Stripe cURL error (confirm): {$curlError}");
-        jsonResponse(['success' => false, 'error' => 'Errore di connessione al sistema di pagamento'], 502);
+        error_log("PayPal capture cURL error: {$curlError}");
+        jsonResponse(['success' => false, 'error' => 'Errore di connessione a PayPal'], 502);
     }
 
-    $stripeData = json_decode($stripeResponse, true);
+    $paypalData = json_decode($paypalResponse, true);
 
-    if ($httpCode !== 200 || !isset($stripeData['status'])) {
-        $stripeError = $stripeData['error']['message'] ?? 'Errore sconosciuto';
-        error_log("Stripe API error confirm ({$httpCode}): {$stripeError}");
+    if ($httpCode !== 200 && $httpCode !== 201) {
+        $ppError = $paypalData['message'] ?? ($paypalData['details'][0]['description'] ?? 'Errore sconosciuto');
+        error_log("PayPal capture error ({$httpCode}): " . json_encode($paypalData));
         jsonResponse([
-            'success' => false,
-            'error' => 'Errore nella verifica del pagamento',
-            'detail' => IS_LOCAL ? $stripeError : null,
+            'success' => false, 
+            'error' => 'Errore nella cattura del pagamento PayPal',
+            'detail' => IS_LOCAL ? $ppError : null
         ], 502);
     }
 
-    $piStatus = $stripeData['status'];
+    $captureStatus = $paypalData['status'] ?? '';
 
     // =====================================================
-    // AGGIORNA ORDINE IN BASE ALLO STATO STRIPE
+    // AGGIORNA ORDINE IN BASE ALLO STATO PAYPAL
     // =====================================================
 
-    if ($piStatus === 'succeeded') {
+    if ($captureStatus === 'COMPLETED') {
+        // Extract PayPal capture ID for reference
+        $captureId = null;
+        if (isset($paypalData['purchase_units'][0]['payments']['captures'][0]['id'])) {
+            $captureId = $paypalData['purchase_units'][0]['payments']['captures'][0]['id'];
+        }
+
         // Pagamento riuscito
         $updateStmt = $pdo->prepare("
             UPDATE orders 
             SET status = 'processing',
                 payment_status = 'paid',
                 paid_at = NOW(3),
-                payment_reference = :charge_id,
+                payment_reference = :capture_id,
                 updated_at = NOW(3)
             WHERE id = :id AND payment_status != 'paid'
         ");
-        $chargeId = $stripeData['latest_charge'] ?? null;
         $updateStmt->execute([
             'id' => $orderId,
-            'charge_id' => $chargeId,
+            'capture_id' => $captureId,
         ]);
 
         // Rileggi ordine aggiornato
@@ -144,42 +161,26 @@ try {
         // Deduct stock from products/variants
         try {
             $stockResult = deductOrderStock($pdo, $orderId);
-            error_log("[ConfirmOrder] Stock dedotto per ordine #{$orderId}: {$stockResult['deducted']} articoli");
+            error_log("[CapturePayPal] Stock dedotto per ordine #{$orderId}: {$stockResult['deducted']} articoli");
         } catch (Exception $stockError) {
-            error_log("[ConfirmOrder] ⚠️ Errore deduzione stock (non bloccante): " . $stockError->getMessage());
+            error_log("[CapturePayPal] ⚠️ Errore deduzione stock (non bloccante): " . $stockError->getMessage());
         }
 
-        // Send order confirmation email (non-blocking - don't fail the response)
+        // Send order confirmation email (non-blocking)
         try {
             sendOrderConfirmationEmail($pdo, $orderId);
         } catch (Exception $emailError) {
-            error_log("[ConfirmOrder] ⚠️ Errore invio email (non bloccante): " . $emailError->getMessage());
+            error_log("[CapturePayPal] ⚠️ Errore invio email (non bloccante): " . $emailError->getMessage());
         }
 
         jsonResponse([
             'success' => true,
-            'message' => 'Pagamento confermato',
+            'message' => 'Pagamento PayPal confermato',
             'order' => formatOrderResponse($order, $orderItems),
         ]);
 
-    } elseif ($piStatus === 'requires_payment_method' || $piStatus === 'canceled') {
-        // Pagamento fallito o annullato
-        $updateStmt = $pdo->prepare("
-            UPDATE orders 
-            SET payment_status = 'failed',
-                updated_at = NOW(3)
-            WHERE id = :id
-        ");
-        $updateStmt->execute(['id' => $orderId]);
-
-        jsonResponse([
-            'success' => false,
-            'error' => 'Il pagamento non è andato a buon fine. Riprova.',
-            'paymentStatus' => $piStatus,
-        ], 402);
-
-    } elseif ($piStatus === 'processing') {
-        // Pagamento in elaborazione (comune con Klarna/bonifici)
+    } elseif ($captureStatus === 'PENDING' || $captureStatus === 'APPROVED') {
+        // Pagamento in attesa (raro con PayPal, ma possibile)
         jsonResponse([
             'success' => true,
             'message' => 'Pagamento in elaborazione. Riceverai una conferma via email.',
@@ -192,20 +193,27 @@ try {
         ]);
 
     } else {
-        // Stato non gestito (requires_confirmation, requires_action, etc.)
+        // Pagamento fallito
+        $updateStmt = $pdo->prepare("
+            UPDATE orders 
+            SET payment_status = 'failed',
+                updated_at = NOW(3)
+            WHERE id = :id
+        ");
+        $updateStmt->execute(['id' => $orderId]);
+
         jsonResponse([
             'success' => false,
-            'error' => 'Pagamento in attesa di completamento',
-            'paymentStatus' => $piStatus,
-            'detail' => IS_LOCAL ? "Stripe PI status: {$piStatus}" : null,
+            'error' => 'Il pagamento PayPal non è andato a buon fine. Riprova.',
+            'paymentStatus' => $captureStatus,
         ], 402);
     }
 
 } catch (Exception $e) {
-    error_log('❌ Errore API confirm-order: ' . $e->getMessage());
+    error_log('❌ Errore API capture-paypal-order: ' . $e->getMessage());
     jsonResponse([
         'success' => false,
-        'error' => 'Errore nella conferma dell\'ordine',
+        'error' => 'Errore nella conferma del pagamento',
         'detail' => IS_LOCAL ? $e->getMessage() : null,
     ], 500);
 }
@@ -214,9 +222,6 @@ try {
 // HELPER FUNCTIONS
 // =====================================================
 
-/**
- * Recupera gli articoli di un ordine
- */
 function getOrderItems($pdo, $orderId) {
     $stmt = $pdo->prepare("
         SELECT id, product_code, product_name, variant_sku, variant_name,
@@ -229,9 +234,6 @@ function getOrderItems($pdo, $orderId) {
     return $stmt->fetchAll();
 }
 
-/**
- * Formatta la risposta dell'ordine
- */
 function formatOrderResponse($order, $items) {
     return [
         'id' => (int)$order['id'],
@@ -254,4 +256,31 @@ function formatOrderResponse($order, $items) {
             ];
         }, $items),
     ];
+}
+
+function getPayPalAccessToken() {
+    $ch = curl_init(PAYPAL_API_URL . '/v1/oauth2/token');
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => 'grant_type=client_credentials',
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_USERPWD => PAYPAL_CLIENT_ID . ':' . PAYPAL_SECRET,
+        CURLOPT_HTTPHEADER => [
+            'Content-Type: application/x-www-form-urlencoded',
+        ],
+        CURLOPT_TIMEOUT => 15,
+    ]);
+
+    $response = curl_exec($ch);
+    $curlError = curl_error($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($curlError || $httpCode !== 200) {
+        error_log("PayPal OAuth error ({$httpCode}): {$curlError} - Response: {$response}");
+        return null;
+    }
+
+    $data = json_decode($response, true);
+    return $data['access_token'] ?? null;
 }
