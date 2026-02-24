@@ -42,4 +42,9 @@ return [
     'stripe_secret_key_live' => 'sk_live_CHANGE_ME',
     'stripe_webhook_secret_test' => 'whsec_CHANGE_ME',
     'stripe_webhook_secret_live' => 'whsec_CHANGE_ME',
+    // PayPal
+    'paypal_client_id_sandbox' => 'YOUR_PAYPAL_SANDBOX_CLIENT_ID',
+    'paypal_secret_sandbox' => 'YOUR_PAYPAL_SANDBOX_SECRET',
+    'paypal_client_id_live' => 'YOUR_PAYPAL_LIVE_CLIENT_ID',
+    'paypal_secret_live' => 'YOUR_PAYPAL_LIVE_SECRET',
 ];

@@ -162,7 +162,7 @@ export interface CheckoutData {
   requiresInvoice: boolean;       // Toggle "Richiedi fattura"
   invoiceData?: InvoiceData;      // Dati fatturazione (se richiesta)
   notes?: string;
-  paymentMethod: 'card' | 'klarna' | 'paypal';
+  paymentMethod: 'card' | 'klarna' | 'paypal' | 'bank_transfer';
 }
 
 // ============================================

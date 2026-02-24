@@ -64,6 +64,18 @@ define('GOOGLE_CLIENT_SECRET', $secrets['google_client_secret']);
 define('STRIPE_SECRET_KEY', $isLocal ? $secrets['stripe_secret_key_test'] : $secrets['stripe_secret_key_live']);
 define('STRIPE_WEBHOOK_SECRET', $isLocal ? $secrets['stripe_webhook_secret_test'] : $secrets['stripe_webhook_secret_live']);
 
+// PayPal
+define('PAYPAL_CLIENT_ID', $isLocal ? $secrets['paypal_client_id_sandbox'] : $secrets['paypal_client_id_live']);
+define('PAYPAL_SECRET', $isLocal ? $secrets['paypal_secret_sandbox'] : $secrets['paypal_secret_live']);
+define('PAYPAL_API_URL', $isLocal ? 'https://api-m.sandbox.paypal.com' : 'https://api-m.paypal.com');
+
+// Bonifico Bancario
+define('BANK_ACCOUNT_HOLDER', 'MAZZON GIOIELLI S.N.C. DI MAZZON IURIC & C.');
+define('BANK_IBAN', 'IT90Z0832763100000000800479');
+define('BANK_NAME', 'Banca di Credito Cooperativo di Roma');
+define('BANK_BRANCH', 'AG. 204');
+define('BANK_SWIFT', 'ICRAITRRROM');
+
 // Spedizione
 define('FREE_SHIPPING_THRESHOLD', 45);  // EUR - spedizione gratuita sopra questa soglia
 define('SHIPPING_COST', 5.90);          // EUR - costo spedizione standard
