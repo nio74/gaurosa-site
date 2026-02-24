@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 
 import { useCart, FREE_SHIPPING_THRESHOLD, SHIPPING_COST } from '@/hooks/useCart';
 import { formatPrice, cn } from '@/lib/utils';
@@ -25,6 +26,9 @@ import type { CheckoutData, CustomerInfo, Address, InvoiceData } from '@/types';
 
 // Initialize Stripe
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+
+// PayPal Client ID
+const PAYPAL_CLIENT_ID = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID || '';
 
 interface FormErrors {
   [key: string]: string;
@@ -142,6 +146,117 @@ function PaymentStep({ checkoutData, clientSecret, orderId, onSuccess, onError }
   );
 }
 
+// PayPal Payment Step Component
+interface PayPalStepProps {
+  orderId: number;
+  paypalOrderId: string;
+  onSuccess: () => void;
+  onError: (error: string) => void;
+}
+
+function PayPalStep({ orderId, paypalOrderId, onSuccess, onError }: PayPalStepProps) {
+  const [isCapturing, setIsCapturing] = useState(false);
+  const { cart } = useCart();
+
+  const handleApprove = async (data: any) => {
+    setIsCapturing(true);
+    try {
+      const response = await fetch('/api/checkout/capture-paypal-order.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          paypalOrderId: data.orderID,
+          orderId,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        onSuccess();
+      } else {
+        onError(result.error || 'Errore nella conferma del pagamento PayPal');
+      }
+    } catch (err) {
+      onError('Errore di rete. Riprova tra un momento.');
+    } finally {
+      setIsCapturing(false);
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="space-y-6"
+    >
+      <div className="bg-white rounded-lg border-2 border-brand-rose p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+          <CreditCard className="h-5 w-5 mr-2 text-brand-rose" />
+          Completa il pagamento con PayPal
+        </h3>
+
+        {isCapturing ? (
+          <div className="flex flex-col items-center py-8">
+            <Loader2 className="h-8 w-8 text-brand-rose animate-spin mb-4" />
+            <p className="text-gray-600">Conferma pagamento in corso...</p>
+          </div>
+        ) : (
+          <div className="mb-4">
+            <PayPalScriptProvider options={{
+              clientId: PAYPAL_CLIENT_ID,
+              currency: 'EUR',
+              intent: 'capture',
+              locale: 'it_IT',
+              enableFunding: 'paylater',
+            }}>
+              {/* PayPal standard button */}
+              <div className="mb-3">
+                <PayPalButtons
+                  style={{
+                    layout: 'vertical',
+                    color: 'gold',
+                    shape: 'rect',
+                    label: 'pay',
+                    height: 50,
+                  }}
+                  createOrder={() => {
+                    return Promise.resolve(paypalOrderId);
+                  }}
+                  onApprove={handleApprove}
+                  onError={(err: any) => {
+                    console.error('PayPal error:', err);
+                    onError('Errore PayPal. Riprova.');
+                  }}
+                  onCancel={() => {
+                    onError('Pagamento annullato. Puoi riprovare.');
+                  }}
+                />
+              </div>
+
+              {/* Pay Later info message */}
+              {cart.total >= 30 && cart.total <= 2000 && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-center">
+                  <p className="text-sm text-blue-800">
+                    <span className="font-semibold">Paga in 3 rate</span> da{' '}
+                    <span className="font-bold">{formatPrice(cart.total / 3)}/mese</span>{' '}
+                    senza interessi con PayPal
+                  </p>
+                </div>
+              )}
+            </PayPalScriptProvider>
+          </div>
+        )}
+
+        <p className="text-xs text-gray-500 mt-3 text-center">
+          Verrai reindirizzato a PayPal per completare il pagamento in sicurezza
+        </p>
+      </div>
+    </motion.div>
+  );
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { cart, isLoaded, clearCart } = useCart();
@@ -171,8 +286,10 @@ export default function CheckoutPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [clientSecret, setClientSecret] = useState<string>('');
   const [orderId, setOrderId] = useState<number>(0);
+  const [paypalOrderId, setPaypalOrderId] = useState<string>('');
   const [showPayment, setShowPayment] = useState(false);
   const [generalError, setGeneralError] = useState<string>('');
+  const [bankDetails, setBankDetails] = useState<any>(null);
 
   // Redirect if cart is empty (only after cart is loaded from localStorage)
   useEffect(() => {
@@ -320,36 +437,75 @@ export default function CheckoutPage() {
         orderedSize: item.variant?.size || null,
       }));
 
-      const response = await fetch('/api/checkout/create-payment-intent.php', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const commonBody = {
+        items,
+        customer: {
+          email: formData.customer.email,
+          name: `${formData.customer.firstName} ${formData.customer.lastName}`.trim(),
+          phone: formData.customer.phone,
         },
-        credentials: 'include',
-        body: JSON.stringify({
-          items,
-          customer: {
-            email: formData.customer.email,
-            name: `${formData.customer.firstName} ${formData.customer.lastName}`.trim(),
-            phone: formData.customer.phone,
-          },
-          shippingAddress: formData.shippingAddress,
-          billingAddress: formData.sameAsBilling ? null : formData.billingAddress,
-          requiresInvoice: formData.requiresInvoice,
-          invoiceData: formData.requiresInvoice ? formData.invoiceData : null,
-          notes: formData.notes || '',
-          paymentMethod: formData.paymentMethod,
-        }),
-      });
+        shippingAddress: formData.shippingAddress,
+        billingAddress: formData.sameAsBilling ? null : formData.billingAddress,
+        requiresInvoice: formData.requiresInvoice,
+        invoiceData: formData.requiresInvoice ? formData.invoiceData : null,
+        notes: formData.notes || '',
+      };
 
-      const result = await response.json();
+      if (formData.paymentMethod === 'bank_transfer') {
+        // Bank transfer flow: create order + redirect to confirmation with bank details
+        const response = await fetch('/api/checkout/create-bank-transfer-order.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ ...commonBody, paymentMethod: 'bank_transfer' }),
+        });
 
-      if (result.success) {
-        setClientSecret(result.clientSecret);
-        setOrderId(result.orderId);
-        setShowPayment(true);
+        const result = await response.json();
+
+        if (result.success) {
+          // Store bank details in sessionStorage for the confirmation page
+          sessionStorage.setItem('bankDetails', JSON.stringify(result.bankDetails));
+          clearCart();
+          router.push(`/ordine/conferma?payment_method=bank_transfer&order_id=${result.orderId}&order_number=${result.orderNumber}&total=${result.totals.total}&redirect_status=succeeded`);
+        } else {
+          setGeneralError(result.error || 'Errore nella creazione dell\'ordine');
+        }
+      } else if (formData.paymentMethod === 'paypal') {
+        // PayPal flow: create PayPal order + DB order
+        const response = await fetch('/api/checkout/create-paypal-order.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ ...commonBody, paymentMethod: 'paypal' }),
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          setPaypalOrderId(result.paypalOrderId);
+          setOrderId(result.orderId);
+          setShowPayment(true);
+        } else {
+          setGeneralError(result.error || 'Errore nella creazione del pagamento PayPal');
+        }
       } else {
-        setGeneralError(result.error || 'Errore nella creazione del pagamento');
+        // Stripe flow (card / klarna): create PaymentIntent + DB order
+        const response = await fetch('/api/checkout/create-payment-intent.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ ...commonBody, paymentMethod: formData.paymentMethod }),
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          setClientSecret(result.clientSecret);
+          setOrderId(result.orderId);
+          setShowPayment(true);
+        } else {
+          setGeneralError(result.error || 'Errore nella creazione del pagamento');
+        }
       }
     } catch (error) {
       setGeneralError('Errore di rete. Riprova tra un momento.');
@@ -360,14 +516,19 @@ export default function CheckoutPage() {
 
   const handlePaymentSuccess = () => {
     clearCart();
-    const piId = clientSecret.split('_secret_')[0];
-    router.push(`/ordine/conferma?payment_intent=${piId}&order_id=${orderId}&redirect_status=succeeded`);
+    if (formData.paymentMethod === 'paypal') {
+      router.push(`/ordine/conferma?payment_method=paypal&paypal_order_id=${paypalOrderId}&order_id=${orderId}&redirect_status=succeeded`);
+    } else {
+      const piId = clientSecret.split('_secret_')[0];
+      router.push(`/ordine/conferma?payment_intent=${piId}&order_id=${orderId}&redirect_status=succeeded`);
+    }
   };
 
   const handlePaymentError = (error: string) => {
     setGeneralError(error);
     setShowPayment(false);
     setClientSecret('');
+    setPaypalOrderId('');
   };
 
   if (cart.items.length === 0) {
@@ -963,7 +1124,7 @@ export default function CheckoutPage() {
                       Metodo di Pagamento
                     </h2>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Credit Card */}
                       <motion.div
                         whileHover={{ scale: 1.02 }}
@@ -1020,30 +1181,112 @@ export default function CheckoutPage() {
                         </p>
                       </motion.div>
 
-                      {/* PayPal (Disabled) */}
-                      <div className="relative">
-                        <div className="border-2 border-gray-200 rounded-lg p-4 opacity-50">
-                          <div className="flex items-center mb-2">
-                            <input
-                              type="radio"
-                              name="paymentMethod"
-                              value="paypal"
-                              disabled
-                              className="h-4 w-4 text-brand-rose focus:ring-brand-rose border-gray-300"
-                            />
-                            <span className="ml-2 font-medium">🟡 PayPal</span>
-                          </div>
-                          <p className="text-sm text-gray-600">
-                            Paga con il tuo account PayPal
-                          </p>
+                      {/* PayPal */}
+                      <motion.div
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className={cn(
+                          'border-2 rounded-lg p-4 cursor-pointer transition-all',
+                          formData.paymentMethod === 'paypal'
+                            ? 'border-brand-rose bg-brand-pink-light'
+                            : 'border-gray-200 hover:border-gray-300'
+                        )}
+                        onClick={() => handleInputChange('paymentMethod', 'paypal')}
+                      >
+                        <div className="flex items-center mb-2">
+                          <input
+                            type="radio"
+                            name="paymentMethod"
+                            value="paypal"
+                            checked={formData.paymentMethod === 'paypal'}
+                            onChange={() => handleInputChange('paymentMethod', 'paypal')}
+                            className="h-4 w-4 text-brand-rose focus:ring-brand-rose border-gray-300"
+                          />
+                          <span className="ml-2 font-medium">🟡 PayPal</span>
                         </div>
-                        <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 rounded-lg">
-                          <span className="text-sm font-medium text-gray-600">
-                            Presto disponibile
-                          </span>
+                        <p className="text-sm text-gray-600">
+                          Paga subito o in 3 rate senza interessi
+                        </p>
+                      </motion.div>
+
+                      {/* Bonifico Bancario */}
+                      <motion.div
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className={cn(
+                          'border-2 rounded-lg p-4 cursor-pointer transition-all',
+                          formData.paymentMethod === 'bank_transfer'
+                            ? 'border-brand-rose bg-brand-pink-light'
+                            : 'border-gray-200 hover:border-gray-300'
+                        )}
+                        onClick={() => handleInputChange('paymentMethod', 'bank_transfer')}
+                      >
+                        <div className="flex items-center mb-2">
+                          <input
+                            type="radio"
+                            name="paymentMethod"
+                            value="bank_transfer"
+                            checked={formData.paymentMethod === 'bank_transfer'}
+                            onChange={() => handleInputChange('paymentMethod', 'bank_transfer')}
+                            className="h-4 w-4 text-brand-rose focus:ring-brand-rose border-gray-300"
+                          />
+                          <span className="ml-2 font-medium">🏦 Bonifico Bancario</span>
                         </div>
-                      </div>
+                        <p className="text-sm text-gray-600">
+                          Paga tramite bonifico bancario
+                        </p>
+                      </motion.div>
                     </div>
+
+                    {/* Pay Later info when PayPal is selected */}
+                    {formData.paymentMethod === 'paypal' && cart.total >= 30 && cart.total <= 2000 && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="mt-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <span className="text-lg">💰</span>
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-blue-900">
+                              Paga in 3 rate con PayPal
+                            </p>
+                            <p className="text-sm text-blue-700 mt-1">
+                              3 rate mensili da <strong>{formatPrice(cart.total / 3)}</strong> senza interessi.
+                              Scegli l'opzione "Paga in 3 rate" nel popup PayPal.
+                            </p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {/* Bank transfer info when selected */}
+                    {formData.paymentMethod === 'bank_transfer' && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="mt-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-4"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="flex-shrink-0 w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
+                            <span className="text-lg">🏦</span>
+                          </div>
+                          <div>
+                            <p className="text-sm font-semibold text-amber-900">
+                              Come funziona il bonifico
+                            </p>
+                            <p className="text-sm text-amber-700 mt-1">
+                              Dopo aver confermato l'ordine, riceverai le coordinate bancarie via email e nella pagina di conferma. 
+                              L'ordine sarà elaborato dopo la ricezione del pagamento (1-2 giorni lavorativi).
+                            </p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    )}
                   </motion.section>
 
                   {/* Submit Button */}
@@ -1085,9 +1328,23 @@ export default function CheckoutPage() {
                     </p>
                   </motion.div>
                 </motion.div>
+              ) : formData.paymentMethod === 'paypal' ? (
+                <motion.div
+                  key="paypal-payment"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <PayPalStep
+                    orderId={orderId}
+                    paypalOrderId={paypalOrderId}
+                    onSuccess={handlePaymentSuccess}
+                    onError={handlePaymentError}
+                  />
+                </motion.div>
               ) : (
                 <motion.div
-                  key="payment"
+                  key="stripe-payment"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}

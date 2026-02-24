@@ -2,11 +2,11 @@
 /**
  * API Sync - GET /api/sync/pending-orders.php
  * 
- * Returns paid orders that need to be synced to MazGest.
+ * Returns orders that need to be synced to MazGest.
  * Called by MazGest PULL system to import new orders.
  * 
- * Only returns orders that:
- * - Have payment_status = 'paid'
+ * Returns orders that:
+ * - Have payment_status = 'paid' OR 'awaiting_payment' (bank transfers)
  * - Have sent_to_mazgest = 0 (not yet synced)
  * 
  * Query params:
@@ -50,7 +50,7 @@ try {
             o.customer_notes, o.internal_notes,
             o.created_at, o.paid_at
         FROM orders o
-        WHERE o.payment_status = 'paid'
+        WHERE o.payment_status IN ('paid', 'awaiting_payment')
           AND o.sent_to_mazgest = 0
         ORDER BY o.created_at ASC
         LIMIT ?
