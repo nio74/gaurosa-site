@@ -10,6 +10,20 @@
 
 require_once __DIR__ . '/../config.php';
 
+/**
+ * Generates a URL-friendly slug from a product name and code.
+ * e.g. "Anello Halo Rombo" + "M02910" → "anello-halo-rombo-m02910"
+ */
+function generateSlug(string $name, string $code): string {
+    $text = strtolower($name . ' ' . $code);
+    // Replace accented characters
+    $text = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $text);
+    // Replace non-alphanumeric with hyphens
+    $text = preg_replace('/[^a-z0-9]+/', '-', $text);
+    // Trim leading/trailing hyphens
+    return trim($text, '-');
+}
+
 // CORS headers
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
