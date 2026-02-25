@@ -355,12 +355,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
-            // Sync varianti
-            if (!empty($product['variants'])) {
-                // Elimina varianti esistenti
-                $pdo->prepare("DELETE FROM product_variants WHERE product_id = ?")->execute([$productId]);
+            // Sync varianti — always delete existing first, then insert new ones (if any)
+            // This ensures products that previously had variants but no longer do get cleaned up
+            $pdo->prepare("DELETE FROM product_variants WHERE product_id = ?")->execute([$productId]);
 
-                // Inserisci nuove
+            if (!empty($product['variants'])) {
                 $varStmt = $pdo->prepare("
                     INSERT INTO product_variants (
                         product_id, mazgest_variant_id, sku, name,
