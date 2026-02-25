@@ -109,18 +109,16 @@ interface OrderDetailResponse {
 }
 
 // Image base URL utility
+// Usa path relativo lato client (funziona sia in locale che in produzione).
+// In locale Next.js proxia le immagini verso XAMPP tramite i rewrite in next.config.ts.
 function getImageBaseUrl(): string {
-  if (typeof window === 'undefined') {
-    return 'https://gaurosa.it';
-  }
-  
-  const hostname = window.location.hostname;
-  
-  if (hostname === 'gaurosa.it' || hostname === 'www.gaurosa.it') {
+  if (typeof window !== 'undefined') {
+    // Lato client: path relativo (stesso dominio, sia locale che produzione)
     return '';
   }
-  
-  return 'http://localhost/gaurosa-site';
+  // SSR: usa URL assoluto basato sull'ambiente
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || '';
+  return siteUrl.includes('gaurosa.it') ? 'https://gaurosa.it' : 'http://localhost/gaurosa-site';
 }
 
 // Status badge component

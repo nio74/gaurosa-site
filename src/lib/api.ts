@@ -10,23 +10,30 @@ import type { ActiveFilters } from '@/types';
 
 /**
  * Base URL delle API PHP
- * - In locale (Next.js dev): chiama XAMPP
- * - In produzione: path relativo (stesso dominio)
+ *
+ * Strategia:
+ * - In locale (next dev): path VUOTO → i rewrite in next.config.ts
+ *   proxy /api-*.php e /api/* verso XAMPP (http://localhost/gaurosa-site/...)
+ * - In produzione (gaurosa.it): path VUOTO → stesso server Apache serve i PHP
+ * - SSR in locale: usa http://localhost/gaurosa-site direttamente (no rewrite lato server)
+ * - SSR in produzione: usa https://gaurosa.it
  */
 function getApiBaseUrl(): string {
-  if (typeof window === 'undefined') {
-    // Server-side rendering - usa produzione
-    return 'https://gaurosa.it';
-  }
-  
-  const hostname = window.location.hostname;
-  
-  // Produzione
-  if (hostname === 'gaurosa.it' || hostname === 'www.gaurosa.it') {
+  // ── Lato CLIENT (browser) ──────────────────────────────────────────────────
+  // Sia in locale che in produzione usiamo path relativo:
+  // - In locale: Next.js dev server intercetta /api-*.php e fa proxy verso XAMPP
+  // - In produzione: Apache serve direttamente i file PHP
+  if (typeof window !== 'undefined') {
     return '';
   }
-  
-  // Sviluppo locale - XAMPP
+
+  // ── Lato SERVER (SSR / next dev) ───────────────────────────────────────────
+  // I rewrite non funzionano lato server, quindi usiamo URL assoluto
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || '';
+  if (siteUrl.includes('gaurosa.it')) {
+    return 'https://gaurosa.it';
+  }
+  // Locale SSR: XAMPP diretto
   return 'http://localhost/gaurosa-site';
 }
 
