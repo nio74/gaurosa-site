@@ -7,7 +7,19 @@ RewriteRule ^api-maintenance\.php$ - [L]
 RewriteRule ^maintenance\.html$ - [L]
 RewriteRule ^maintenance\.json$ - [L]
 
-# Se il file esiste fisicamente, servilo
+# Reindirizza /_next/ verso out/_next/ (build statica Next.js)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^_next/(.*)$ out/_next/$1 [L]
+
+# Reindirizza /images/ verso out/images/ (logo e immagini statiche)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^images/(.*)$ out/images/$1 [L]
+
+# Reindirizza /uploads/ verso out/uploads/ (immagini prodotti)
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^uploads/(.*)$ out/uploads/$1 [L]
+
+# Se il file esiste fisicamente nella root, servilo
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteRule ^ - [L]
 
