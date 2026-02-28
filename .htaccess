@@ -24,5 +24,12 @@ RewriteRule ^(.*/)$ out/$1index.html [L]
 RewriteCond %{DOCUMENT_ROOT}/out%{REQUEST_URI}/index.html -f
 RewriteRule ^(.+[^/])$ out/$1/index.html [L]
 
-# ── 4. 404 fallback ──────────────────────────────────────────────────
+# ── 4. Product detail fallback ───────────────────────────────────────
+# For /prodotti/ANYCODE not pre-generated, serve the shell page.
+# ProductDetailClient reads the code from the URL client-side via usePathname().
+RewriteCond %{REQUEST_URI} ^/prodotti/[^/]+/?$
+RewriteCond %{DOCUMENT_ROOT}/out/prodotti/_shell/index.html -f
+RewriteRule ^prodotti/[^/]+/?$ out/prodotti/_shell/index.html [L]
+
+# ── 5. 404 fallback ──────────────────────────────────────────────────
 ErrorDocument 404 /out/404.html

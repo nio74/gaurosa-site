@@ -1,37 +1,37 @@
 import { Suspense, use } from 'react';
 import ProductDetailClient from './ProductDetailClient';
 
-// In static export, only pre-generated pages exist.
-// dynamicParams = false → any code not in generateStaticParams returns 404.
-// We fetch ALL synced product codes from the API at build time.
-export const dynamicParams = false;
+// Static export strategy:
+// - Pre-generate pages for all currently synced products (fetched from API at build time)
+// - Always include a "_shell" placeholder so the .htaccess fallback can serve it
+//   for any product code not yet pre-generated (newly synced products work without rebuild)
+// - dynamicParams is NOT set to false, so unknown codes don't hard-404 at Next.js level
 
 export async function generateStaticParams() {
+  // Always include the shell placeholder
+  const params: Array<{ code: string }> = [{ code: '_shell' }];
+
   try {
     const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://gaurosa.it';
 
-    // Fetch all products (up to 1000) to get their codes
+    // Fetch all synced products to pre-generate their pages
     const res = await fetch(`${siteUrl}/api/products.php?limit=1000&offset=0`, {
-      // No cache: always fresh at build time
       cache: 'no-store',
     });
 
-    if (!res.ok) {
-      console.warn('[generateStaticParams] API returned', res.status, '— falling back to empty list');
-      return [];
+    if (res.ok) {
+      const json = await res.json();
+      const products: Array<{ code: string }> = json?.data?.products ?? [];
+      console.log(`[generateStaticParams] Pre-generating ${products.length} product pages + shell`);
+      products.forEach((p) => params.push({ code: p.code }));
+    } else {
+      console.warn('[generateStaticParams] API returned', res.status, '— only shell generated');
     }
-
-    const json = await res.json();
-    const products: Array<{ code: string }> = json?.data?.products ?? [];
-
-    console.log(`[generateStaticParams] Pre-generating ${products.length} product pages`);
-
-    return products.map((p) => ({ code: p.code }));
   } catch (err) {
     console.error('[generateStaticParams] Failed to fetch product codes:', err);
-    // Return empty — no product pages will be pre-generated (build still succeeds)
-    return [];
   }
+
+  return params;
 }
 
 export default function ProductDetailPage({ params }: { params: Promise<{ code: string }> }) {
