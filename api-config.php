@@ -113,3 +113,128 @@ function getJsonBody() {
     $json = file_get_contents('php://input');
     return json_decode($json, true) ?? [];
 }
+
+/**
+ * Calcola il prezzo scontato applicando le promozioni attive.
+ *
+ * Restituisce un array con:
+ *   - price            float  Prezzo finale (scontato se promo applicata)
+ *   - compare_at_price float|null  Prezzo originale (se promo applicata), null altrimenti
+ *   - promo_badge      string|null Badge testuale (es: "-20%")
+ *
+ * Logica priorità:
+ *   1. specific_products  (codice prodotto nella lista)
+ *   2. category           (main_category o subcategory del prodotto)
+ *   3. tag                (tag del prodotto)
+ *   4. all_products       (si applica a tutto)
+ *
+ * @param PDO    $pdo          Connessione DB
+ * @param float  $basePrice    Prezzo base del prodotto
+ * @param string $productCode  Codice prodotto (es: M02863)
+ * @param string $mainCategory Categoria principale (es: gioielli)
+ * @param string $subcategory  Sottocategoria (es: anello)
+ * @param array  $productTags  Array di tag code del prodotto
+ * @param float|null $existingCompareAt  compare_at_price già presente nel DB prodotto
+ */
+function applyPromotions(
+    PDO $pdo,
+    float $basePrice,
+    string $productCode,
+    string $mainCategory = '',
+    string $subcategory = '',
+    array $productTags = [],
+    ?float $existingCompareAt = null
+): array {
+    $now = date('Y-m-d H:i:s');
+
+    // Fetch all active promotions (percentage or fixed_amount only — no coupon/bundle/threshold here)
+    try {
+        $stmt = $pdo->prepare("
+            SELECT * FROM promotions
+            WHERE is_active = 1
+              AND starts_at <= :now
+              AND ends_at   >= :now
+              AND type IN ('percentage', 'fixed_amount', 'flash_sale')
+            ORDER BY
+              CASE applies_to
+                WHEN 'specific_products' THEN 1
+                WHEN 'category'          THEN 2
+                WHEN 'tag'               THEN 3
+                WHEN 'all_products'      THEN 4
+                ELSE 5
+              END ASC,
+              discount_value DESC
+        ");
+        $stmt->execute([':now' => $now]);
+        $promotions = $stmt->fetchAll();
+    } catch (Exception $e) {
+        // If promotions table doesn't exist yet, return unchanged
+        return [
+            'price'            => $basePrice,
+            'compare_at_price' => $existingCompareAt,
+            'promo_badge'      => null,
+        ];
+    }
+
+    foreach ($promotions as $promo) {
+        $applies = false;
+
+        switch ($promo['applies_to']) {
+            case 'specific_products':
+                $codes = $promo['product_codes'] ? json_decode($promo['product_codes'], true) : [];
+                $applies = is_array($codes) && in_array($productCode, $codes);
+                break;
+
+            case 'category':
+                $slug = $promo['category_slug'] ?? '';
+                $applies = ($slug === $mainCategory || $slug === $subcategory);
+                break;
+
+            case 'tag':
+                $tagSlug = $promo['tag_slug'] ?? '';
+                $applies = in_array($tagSlug, $productTags);
+                break;
+
+            case 'all_products':
+                $applies = true;
+                break;
+        }
+
+        if (!$applies) continue;
+
+        // Calculate discounted price
+        $discountValue = (float)$promo['discount_value'];
+        $discountedPrice = $basePrice;
+
+        if ($promo['discount_type'] === 'percentage') {
+            $discountedPrice = round($basePrice * (1 - $discountValue / 100), 2);
+        } elseif ($promo['discount_type'] === 'fixed_amount') {
+            $discountedPrice = max(0, round($basePrice - $discountValue, 2));
+        }
+
+        if ($discountedPrice >= $basePrice) continue; // No actual discount
+
+        // Build badge label
+        $badge = $promo['promo_badge'] ?: null;
+        if (!$badge) {
+            if ($promo['discount_type'] === 'percentage') {
+                $badge = '-' . (int)$discountValue . '%';
+            } else {
+                $badge = '-€' . number_format($discountValue, 0);
+            }
+        }
+
+        return [
+            'price'            => $discountedPrice,
+            'compare_at_price' => $basePrice,
+            'promo_badge'      => $badge,
+        ];
+    }
+
+    // No promotion matched
+    return [
+        'price'            => $basePrice,
+        'compare_at_price' => $existingCompareAt,
+        'promo_badge'      => null,
+    ];
+}
