@@ -78,6 +78,15 @@ function OrderConfirmationContent() {
           status: 'pending',
           paymentStatus: 'awaiting_payment',
         });
+        // Fire Meta Pixel Purchase event (bank transfer)
+        if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
+          window.fbq('track', 'Purchase', {
+            value: total,
+            currency: 'EUR',
+            content_type: 'product',
+          });
+        }
+
         setStatus('success');
         clearCart();
         return;
@@ -96,6 +105,7 @@ function OrderConfirmationContent() {
         if (redirectStatus === 'succeeded') {
           // PayPal payment was already captured in the checkout page
           // Just show success - the capture already happened
+          let paypalTotal = 0;
           try {
             // Fetch order details from our API
             const response = await fetch(`/api/orders.php?id=${orderId}`, {
@@ -104,6 +114,7 @@ function OrderConfirmationContent() {
             const data = await response.json();
 
             if (data.success && data.order) {
+              paypalTotal = data.order.total || 0;
               setOrder({
                 orderId: data.order.id,
                 orderNumber: data.order.orderNumber,
@@ -133,6 +144,16 @@ function OrderConfirmationContent() {
               paymentStatus: 'paid',
             });
           }
+
+          // Fire Meta Pixel Purchase event (PayPal)
+          if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
+            window.fbq('track', 'Purchase', {
+              value: paypalTotal,
+              currency: 'EUR',
+              content_type: 'product',
+            });
+          }
+
           setStatus('success');
           clearCart();
           return;
@@ -183,6 +204,15 @@ function OrderConfirmationContent() {
             paymentStatus: data.order?.paymentStatus || 'paid',
           });
           setStatus('success');
+
+          // Fire Meta Pixel Purchase event
+          if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
+            window.fbq('track', 'Purchase', {
+              value: data.order?.total || 0,
+              currency: 'EUR',
+              content_type: 'product',
+            });
+          }
 
           // Clear the cart after successful order
           clearCart();
