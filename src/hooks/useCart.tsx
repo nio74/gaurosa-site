@@ -68,6 +68,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [cart.items]);
 
   const addToCart = (product: Product, variant?: ProductVariant, quantity = 1) => {
+    // Fire Meta Pixel AddToCart event
+    if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
+      const price = variant?.price ?? product.price;
+      window.fbq('track', 'AddToCart', {
+        content_ids: [product.code],
+        content_name: product.name,
+        content_type: 'product',
+        value: price,
+        currency: 'EUR',
+      });
+    }
+
     setCart((prev) => {
       const existingIndex = prev.items.findIndex(
         (item) =>

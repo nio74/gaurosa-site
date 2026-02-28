@@ -4,6 +4,7 @@ import './globals.css';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { CartProvider } from '@/hooks/useCart';
+import MetaPixel from '@/components/MetaPixel';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -44,6 +45,7 @@ export default function RootLayout({
   return (
     <html lang="it">
       <body className={`${inter.className} antialiased`}>
+        <MetaPixel />
         <CartProvider>
           <div className="flex flex-col min-h-screen">
             <Header />

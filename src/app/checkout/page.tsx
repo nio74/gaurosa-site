@@ -298,6 +298,20 @@ export default function CheckoutPage() {
     }
   }, [isLoaded, cart.items.length, router, showPayment]);
 
+  // Fire Meta Pixel InitiateCheckout once when cart is loaded
+  useEffect(() => {
+    if (!isLoaded || cart.items.length === 0) return;
+    if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
+      window.fbq('track', 'InitiateCheckout', {
+        content_ids: cart.items.map(item => item.product.code),
+        num_items: cart.items.reduce((sum, item) => sum + item.quantity, 0),
+        value: cart.total,
+        currency: 'EUR',
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoaded]);
+
   // Try to fetch user data if logged in
   useEffect(() => {
     const fetchUserData = async () => {

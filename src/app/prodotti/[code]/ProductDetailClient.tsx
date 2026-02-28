@@ -216,6 +216,17 @@ export default function ProductDetailClient({ code: codeProp }: { code: string }
 
         if (data.success) {
           setProduct(data.data);
+
+          // Fire Meta Pixel ViewContent event
+          if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
+            window.fbq('track', 'ViewContent', {
+              content_ids: [data.data.code],
+              content_name: data.data.name,
+              content_type: 'product',
+              value: data.data.price,
+              currency: 'EUR',
+            });
+          }
         } else {
           setError('Prodotto non trovato');
         }
