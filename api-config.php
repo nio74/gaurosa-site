@@ -152,8 +152,8 @@ function applyPromotions(
         $stmt = $pdo->prepare("
             SELECT * FROM promotions
             WHERE is_active = 1
-              AND starts_at <= :now
-              AND ends_at   >= :now
+              AND starts_at <= :now1
+              AND ends_at   >= :now2
               AND type IN ('percentage', 'fixed_amount', 'flash_sale')
             ORDER BY
               CASE applies_to
@@ -165,7 +165,7 @@ function applyPromotions(
               END ASC,
               discount_value DESC
         ");
-        $stmt->execute([':now' => $now]);
+        $stmt->execute([':now1' => $now, ':now2' => $now]);
         $promotions = $stmt->fetchAll();
     } catch (Exception $e) {
         // If promotions table doesn't exist yet, return unchanged
