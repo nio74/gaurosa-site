@@ -281,9 +281,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $total = (int)$countStmt->fetch()['total'];
         
         // ============================================
-        // Formatta prodotti
+        // Formatta prodotti (con promozioni applicate)
         // ============================================
-        $formattedProducts = array_map(function($product) {
+        $formattedProducts = array_map(function($product) use ($pdo) {
             // Parse immagini (with optimized versions)
             $images = [];
             if (!empty($product['images_data'])) {
@@ -301,14 +301,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     }
                 }
             }
-            
+
+            // Apply active promotions
+            $promo = applyPromotions(
+                $pdo,
+                (float)$product['price'],
+                $product['code'],
+                $product['main_category'] ?? '',
+                $product['subcategory'] ?? '',
+                [], // Tags not loaded in list view for performance
+                $product['compare_at_price'] ? (float)$product['compare_at_price'] : null
+            );
+
             return [
                 'id' => (int)$product['id'],
                 'mazgestId' => (int)$product['mazgest_id'],
                 'code' => $product['code'],
                 'name' => $product['name'],
-                'price' => (float)$product['price'],
-                'compareAtPrice' => $product['compare_at_price'] ? (float)$product['compare_at_price'] : null,
+                'price' => $promo['price'],
+                'compareAtPrice' => $promo['compare_at_price'],
                 'stock' => (int)$product['stock'],
                 'inStock' => (int)$product['stock'] > 0,
                 'main_category' => $product['main_category'],

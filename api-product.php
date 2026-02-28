@@ -79,7 +79,19 @@ try {
     ");
     $tagStmt->execute(['productId' => $product['id']]);
     $tags = $tagStmt->fetchAll();
-    
+
+    // Apply active promotions to calculate discounted price
+    $tagCodes = array_column($tags, 'code');
+    $promo = applyPromotions(
+        $pdo,
+        (float)$product['price'],
+        $product['code'],
+        $product['main_category'] ?? '',
+        $product['subcategory'] ?? '',
+        $tagCodes,
+        $product['compare_at_price'] ? (float)$product['compare_at_price'] : null
+    );
+
     // Formatta risposta
     $response = [
         'id' => (int)$product['id'],
@@ -93,8 +105,8 @@ try {
         'subcategory' => $product['subcategory'],
         'supplier' => $product['supplier_name'] ?? '',
         'brand' => $product['brand_name'] ?? '',
-        'price' => (float)$product['price'],
-        'compare_at_price' => $product['compare_at_price'] ? (float)$product['compare_at_price'] : null,
+        'price' => $promo['price'],
+        'compare_at_price' => $promo['compare_at_price'],
         
         // Stock
         'stock' => [
