@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Ruler, Circle, Info, ChevronRight, Link as LinkIcon } from 'lucide-react';
+import { Ruler, Circle, Info, ChevronRight, Link as LinkIcon, Play } from 'lucide-react';
 import Link from 'next/link';
 
 const ringTable = [
@@ -164,6 +164,35 @@ export default function GuidaMisuraAnelliPage() {
                     <strong>Consiglio:</strong> Misura il dito a fine giornata, quando è leggermente più grande. 
                     Evita di misurare quando hai freddo — le dita si restringono con il freddo.
                   </p>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Video guida */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            >
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-brand-rose text-white rounded-xl flex items-center justify-center">
+                  <Play className="w-5 h-5" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900">Video Guida</h2>
+              </div>
+
+              <div className="bg-white rounded-xl p-4 shadow-sm">
+                <p className="text-sm text-gray-600 mb-4">
+                  Guarda il nostro video per imparare a misurare correttamente la tua misura anello in pochi secondi.
+                </p>
+                <div className="relative w-full rounded-xl overflow-hidden" style={{ paddingBottom: '56.25%' }}>
+                  <iframe
+                    className="absolute inset-0 w-full h-full"
+                    src="https://www.youtube.com/embed/fiazHW7LiqY"
+                    title="Come misurare la misura dell'anello - Gaurosa"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
                 </div>
               </div>
             </motion.div>
