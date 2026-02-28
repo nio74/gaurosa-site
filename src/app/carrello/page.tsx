@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -27,32 +27,58 @@ export default function CartPage() {
   const [autoPromoLabel, setAutoPromoLabel] = useState<string | null>(null);
   const [promoLoaded, setPromoLoaded] = useState(false);
 
-  // Calcola sconti automatici al caricamento (senza coupon)
+  // Bundle 2+1 info
+  const [bundleInfo, setBundleInfo] = useState<{
+    free_percent: number;
+    items_in_cart: number;
+    items_needed: number;
+    groups_active: number;
+    cheapest_name: string | null;
+    cheapest_price: number | null;
+    discount_applied: number;
+    potential_discount: number;
+    badge: string | null;
+    message: string | null;
+  } | null>(null);
+
+  // Helper: build items payload (includes name for bundle info)
+  const buildItemsPayload = useCallback(() =>
+    cart.items.map(item => ({
+      code: item.product.code,
+      name: item.product.name,
+      price: item.variant?.price || item.product.price,
+      quantity: item.quantity,
+      category: item.product.macro_category || '',
+      tags: item.product.tags || [],
+    })), [cart.items]);
+
+  // Calcola sconti automatici — si ricalcola ogni volta che il carrello cambia
   const loadAutoPromotions = useCallback(async () => {
-    if (promoLoaded || cart.items.length === 0) return;
+    if (cart.items.length === 0) {
+      setAutoDiscount(0);
+      setAutoPromoLabel(null);
+      setBundleInfo(null);
+      setPromoLoaded(true);
+      return;
+    }
     try {
-      const items = cart.items.map(item => ({
-        code: item.product.code,
-        price: item.variant?.price || item.product.price,
-        quantity: item.quantity,
-        category: item.product.macro_category || '',
-        tags: item.product.tags || [],
-      }));
+
       const res = await fetch(`${API_BASE}/api/apply-promotion.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items, subtotal: cart.subtotal }),
+        body: JSON.stringify({ items: buildItemsPayload(), subtotal: cart.subtotal }),
       });
       const data = await res.json();
-      if (data.success && data.discount > 0) {
-        setAutoDiscount(data.discount);
-        setAutoPromoLabel(data.discount_label || 'Promozione applicata');
+      if (data.success) {
+        setAutoDiscount(data.discount > 0 ? data.discount : 0);
+        setAutoPromoLabel(data.discount_label || null);
+        setBundleInfo(data.bundle_info || null);
       }
       setPromoLoaded(true);
     } catch {
       setPromoLoaded(true);
     }
-  }, [cart.items, cart.subtotal, promoLoaded]);
+  }, [cart.items, cart.subtotal, buildItemsPayload]);
 
   // Applica coupon
   const applyCoupon = async () => {
@@ -60,17 +86,10 @@ export default function CartPage() {
     setCouponLoading(true);
     setCouponError(null);
     try {
-      const items = cart.items.map(item => ({
-        code: item.product.code,
-        price: item.variant?.price || item.product.price,
-        quantity: item.quantity,
-        category: item.product.macro_category || '',
-        tags: item.product.tags || [],
-      }));
       const res = await fetch(`${API_BASE}/api/apply-promotion.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items, subtotal: cart.subtotal, coupon_code: couponInput.trim().toUpperCase() }),
+        body: JSON.stringify({ items: buildItemsPayload(), subtotal: cart.subtotal, coupon_code: couponInput.trim().toUpperCase() }),
       });
       const data = await res.json();
       if (!data.success) {
@@ -92,6 +111,13 @@ export default function CartPage() {
       setCouponLoading(false);
     }
   };
+
+  // Ricalcola promozioni ogni volta che cambiano gli item del carrello
+  useEffect(() => {
+    setPromoLoaded(false);
+    loadAutoPromotions();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cart.items.length, cart.subtotal]);
 
   const removeCoupon = () => {
     setCouponApplied(null);
@@ -294,6 +320,90 @@ export default function CartPage() {
               <h2 className="text-lg font-bold text-gray-900 mb-4">
                 Riepilogo ordine
               </h2>
+
+              {/* ── Banner Bundle 2+1 ─────────────────────────────── */}
+              {bundleInfo && (() => {
+                const { items_in_cart, items_needed, free_percent, cheapest_name,
+                        cheapest_price, discount_applied, potential_discount } = bundleInfo;
+                const progress = Math.min((items_in_cart / 3) * 100, 100);
+                const isActive = items_in_cart >= 3 && discount_applied > 0;
+                const isFreePercent = free_percent >= 99;
+
+                return (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className={`mb-4 p-4 rounded-xl border-2 transition-all duration-500 ${
+                      isActive
+                        ? 'bg-purple-50 border-purple-200'
+                        : 'bg-amber-50/60 border-amber-200'
+                    }`}
+                  >
+                    {isActive ? (
+                      /* ── Promozione attiva ── */
+                      <div className="flex items-start gap-3">
+                        <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
+                          <Gift className="w-5 h-5 text-purple-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-purple-800 text-sm">
+                            🎉 Promozione Bundle attiva!
+                          </p>
+                          {cheapest_name && (
+                            <p className="text-xs text-purple-600 mt-0.5 truncate">
+                              «{cheapest_name}» scontato del{' '}
+                              <strong>{isFreePercent ? '100' : Math.round(free_percent)}%</strong>
+                              {cheapest_price != null && (
+                                <> → risparmi <strong>{formatPrice(discount_applied)}</strong></>
+                              )}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      /* ── Progresso verso il bundle ── */
+                      <>
+                        <div className="flex items-start gap-3 mb-3">
+                          <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                            <Gift className="w-5 h-5 text-amber-600" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-semibold text-gray-800 text-sm leading-snug">
+                              {items_needed === 2
+                                ? <>Aggiungi <span className="text-amber-600 font-bold">2 prodotti</span> e il meno caro sarà{' '}
+                                    {isFreePercent ? 'quasi gratis' : `scontato del ${Math.round(free_percent)}%`}!</>
+                                : <>Aggiungi ancora <span className="text-amber-600 font-bold">1 prodotto</span> e il meno caro sarà{' '}
+                                    {isFreePercent ? 'quasi gratis' : `scontato del ${Math.round(free_percent)}%`}!
+                                    {potential_discount > 0 && (
+                                      <> Risparmieresti <strong className="text-amber-700">{formatPrice(potential_discount)}</strong>!</>
+                                    )}</>
+                              }
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Barra progresso 3 slot */}
+                        <div className="flex gap-1.5 mb-2">
+                          {[0, 1, 2].map(i => (
+                            <div
+                              key={i}
+                              className={`flex-1 h-2.5 rounded-full transition-all duration-500 ${
+                                i < items_in_cart
+                                  ? 'bg-amber-400'
+                                  : 'bg-gray-200'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                        <div className="flex justify-between text-xs text-gray-400">
+                          <span>{items_in_cart} {items_in_cart === 1 ? 'prodotto' : 'prodotti'} nel carrello</span>
+                          <span>3 per il bundle</span>
+                        </div>
+                      </>
+                    )}
+                  </motion.div>
+                );
+              })()}
 
               {/* Free Shipping Progress Bar (basato su subtotale scontato) */}
               {(() => {
