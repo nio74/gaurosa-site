@@ -1,17 +1,109 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, ArrowLeft, Truck, Gift, Package } from 'lucide-react';
+import { Trash2, Plus, Minus, ShoppingBag, ArrowRight, ArrowLeft, Truck, Gift, Package, Tag, X, Loader2 } from 'lucide-react';
 import { useCart, FREE_SHIPPING_THRESHOLD, SHIPPING_COST } from '@/hooks/useCart';
 import Button from '@/components/ui/Button';
 import { formatPrice } from '@/lib/utils';
 
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || '';
+
 export default function CartPage() {
   const { cart, removeFromCart, updateQuantity, clearCart } = useCart();
   const [isClearing, setIsClearing] = useState(false);
+
+  // Coupon state
+  const [couponInput, setCouponInput] = useState('');
+  const [couponApplied, setCouponApplied] = useState<string | null>(null);
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponError, setCouponError] = useState<string | null>(null);
+  const [couponLoading, setCouponLoading] = useState(false);
+
+  // Promozioni automatiche
+  const [autoDiscount, setAutoDiscount] = useState(0);
+  const [autoPromoLabel, setAutoPromoLabel] = useState<string | null>(null);
+  const [promoLoaded, setPromoLoaded] = useState(false);
+
+  // Calcola sconti automatici al caricamento (senza coupon)
+  const loadAutoPromotions = useCallback(async () => {
+    if (promoLoaded || cart.items.length === 0) return;
+    try {
+      const items = cart.items.map(item => ({
+        code: item.product.code,
+        price: item.variant?.price || item.product.price,
+        quantity: item.quantity,
+        category: item.product.macro_category || '',
+        tags: item.product.tags || [],
+      }));
+      const res = await fetch(`${API_BASE}/api/apply-promotion.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items, subtotal: cart.subtotal }),
+      });
+      const data = await res.json();
+      if (data.success && data.discount > 0) {
+        setAutoDiscount(data.discount);
+        setAutoPromoLabel(data.discount_label || 'Promozione applicata');
+      }
+      setPromoLoaded(true);
+    } catch {
+      setPromoLoaded(true);
+    }
+  }, [cart.items, cart.subtotal, promoLoaded]);
+
+  // Applica coupon
+  const applyCoupon = async () => {
+    if (!couponInput.trim()) return;
+    setCouponLoading(true);
+    setCouponError(null);
+    try {
+      const items = cart.items.map(item => ({
+        code: item.product.code,
+        price: item.variant?.price || item.product.price,
+        quantity: item.quantity,
+        category: item.product.macro_category || '',
+        tags: item.product.tags || [],
+      }));
+      const res = await fetch(`${API_BASE}/api/apply-promotion.php`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items, subtotal: cart.subtotal, coupon_code: couponInput.trim().toUpperCase() }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        setCouponError('Errore nella verifica del coupon');
+        return;
+      }
+      if (!data.coupon_valid) {
+        setCouponError(data.coupon_error || 'Codice coupon non valido');
+        return;
+      }
+      // Trova lo sconto del solo coupon
+      const couponPromo = data.applied_promotions?.find((p: { type: string }) => p.type === 'coupon');
+      setCouponDiscount(couponPromo?.discount || 0);
+      setCouponApplied(couponInput.trim().toUpperCase());
+      setCouponInput('');
+    } catch {
+      setCouponError('Errore di connessione. Riprova.');
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const removeCoupon = () => {
+    setCouponApplied(null);
+    setCouponDiscount(0);
+    setCouponError(null);
+  };
+
+  // Totale con sconti
+  const totalDiscount = autoDiscount + couponDiscount;
+  const discountedSubtotal = Math.max(0, cart.subtotal - totalDiscount);
+  const shippingCost = discountedSubtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
+  const finalTotal = discountedSubtotal + shippingCost;
 
   const handleClearCart = () => {
     if (window.confirm('Sei sicuro di voler svuotare il carrello?')) {
@@ -203,11 +295,11 @@ export default function CartPage() {
                 Riepilogo ordine
               </h2>
 
-              {/* Free Shipping Progress Bar */}
+              {/* Free Shipping Progress Bar (basato su subtotale scontato) */}
               {(() => {
-                const isFreeShipping = cart.subtotal >= FREE_SHIPPING_THRESHOLD;
-                const progress = Math.min((cart.subtotal / FREE_SHIPPING_THRESHOLD) * 100, 100);
-                const remaining = FREE_SHIPPING_THRESHOLD - cart.subtotal;
+                const isFreeShipping = discountedSubtotal >= FREE_SHIPPING_THRESHOLD;
+                const progress = Math.min((discountedSubtotal / FREE_SHIPPING_THRESHOLD) * 100, 100);
+                const remaining = FREE_SHIPPING_THRESHOLD - discountedSubtotal;
 
                 return (
                   <div className={`mb-5 p-4 rounded-xl border-2 transition-all duration-500 ${
@@ -216,7 +308,6 @@ export default function CartPage() {
                       : 'bg-rose-50/50 border-rose-100'
                   }`}>
                     {isFreeShipping ? (
-                      /* Spedizione gratuita raggiunta */
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
                           <Gift className="w-5 h-5 text-green-600" />
@@ -231,7 +322,6 @@ export default function CartPage() {
                         </div>
                       </div>
                     ) : (
-                      /* Barra progresso */
                       <>
                         <div className="flex items-center gap-3 mb-3">
                           <div className="w-10 h-10 rounded-full bg-rose-100 flex items-center justify-center flex-shrink-0">
@@ -243,26 +333,18 @@ export default function CartPage() {
                             </p>
                           </div>
                         </div>
-
-                        {/* Progress bar */}
                         <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
                           <motion.div
                             className="h-full rounded-full"
-                            style={{
-                              background: 'linear-gradient(90deg, #8b1538, #f9c3d5)',
-                            }}
+                            style={{ background: 'linear-gradient(90deg, #8b1538, #f9c3d5)' }}
                             initial={{ width: 0 }}
                             animate={{ width: `${progress}%` }}
                             transition={{ duration: 0.8, ease: 'easeOut' }}
                           />
                         </div>
                         <div className="flex justify-between mt-1.5">
-                          <span className="text-xs text-gray-400">
-                            {formatPrice(cart.subtotal)}
-                          </span>
-                          <span className="text-xs text-gray-400">
-                            {formatPrice(FREE_SHIPPING_THRESHOLD)}
-                          </span>
+                          <span className="text-xs text-gray-400">{formatPrice(discountedSubtotal)}</span>
+                          <span className="text-xs text-gray-400">{formatPrice(FREE_SHIPPING_THRESHOLD)}</span>
                         </div>
                       </>
                     )}
@@ -270,25 +352,87 @@ export default function CartPage() {
                 );
               })()}
 
+              {/* Campo Coupon */}
+              <div className="mb-4">
+                {couponApplied ? (
+                  <div className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+                    <div className="flex items-center gap-2 text-green-700 text-sm">
+                      <Tag className="w-4 h-4" />
+                      <span className="font-mono font-bold">{couponApplied}</span>
+                      <span>applicato</span>
+                    </div>
+                    <button onClick={removeCoupon} className="text-green-500 hover:text-red-500 transition-colors">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={couponInput}
+                      onChange={e => { setCouponInput(e.target.value.toUpperCase()); setCouponError(null); }}
+                      onKeyDown={e => e.key === 'Enter' && applyCoupon()}
+                      placeholder="Codice coupon"
+                      className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                    />
+                    <button
+                      onClick={applyCoupon}
+                      disabled={couponLoading || !couponInput.trim()}
+                      className="px-3 py-2 bg-gray-800 text-white rounded-lg text-sm hover:bg-gray-700 disabled:opacity-50 flex items-center gap-1"
+                    >
+                      {couponLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Tag className="w-4 h-4" />}
+                      Applica
+                    </button>
+                  </div>
+                )}
+                {couponError && (
+                  <p className="text-xs text-red-500 mt-1">{couponError}</p>
+                )}
+              </div>
+
+              {/* Riepilogo prezzi */}
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-500">Subtotale</span>
                   <span className="font-medium">{formatPrice(cart.subtotal)}</span>
                 </div>
+
+                {/* Sconto automatico */}
+                {autoDiscount > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span className="flex items-center gap-1">
+                      <Tag className="w-3.5 h-3.5" />
+                      {autoPromoLabel || 'Promozione'}
+                    </span>
+                    <span className="font-medium">-{formatPrice(autoDiscount)}</span>
+                  </div>
+                )}
+
+                {/* Sconto coupon */}
+                {couponDiscount > 0 && (
+                  <div className="flex justify-between text-green-600">
+                    <span className="flex items-center gap-1">
+                      <Tag className="w-3.5 h-3.5" />
+                      Coupon {couponApplied}
+                    </span>
+                    <span className="font-medium">-{formatPrice(couponDiscount)}</span>
+                  </div>
+                )}
+
                 <div className="flex justify-between">
                   <span className="text-gray-500">Spedizione</span>
-                  {cart.shipping === 0 ? (
+                  {shippingCost === 0 ? (
                     <span className="font-medium text-green-600 flex items-center gap-1">
                       <Package className="w-3.5 h-3.5" />
                       Gratuita
                     </span>
                   ) : (
-                    <span className="font-medium">{formatPrice(cart.shipping)}</span>
+                    <span className="font-medium">{formatPrice(shippingCost)}</span>
                   )}
                 </div>
                 <div className="flex justify-between text-xs text-gray-400">
                   <span>di cui IVA (22%)</span>
-                  <span>{formatPrice(cart.tax)}</span>
+                  <span>{formatPrice(finalTotal * 0.22 / 1.22)}</span>
                 </div>
               </div>
 
@@ -296,12 +440,19 @@ export default function CartPage() {
 
               <div className="flex justify-between items-center mb-6">
                 <span className="text-lg font-bold text-gray-900">Totale</span>
-                <span className="text-xl font-bold text-gray-900">
-                  {formatPrice(cart.total)}
-                </span>
+                <div className="text-right">
+                  {totalDiscount > 0 && (
+                    <p className="text-sm text-gray-400 line-through">{formatPrice(cart.subtotal + (cart.subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST))}</p>
+                  )}
+                  <span className="text-xl font-bold text-gray-900">
+                    {formatPrice(finalTotal)}
+                  </span>
+                </div>
               </div>
 
-              <Link href="/checkout">
+              <Link
+                href={`/checkout${couponApplied ? `?coupon=${couponApplied}` : ''}`}
+              >
                 <Button size="lg" className="w-full">
                   Procedi al checkout
                   <ArrowRight className="w-4 h-4 ml-2" />
@@ -322,15 +473,9 @@ export default function CartPage() {
 
               {/* Payment methods */}
               <div className="mt-4 pt-4 border-t border-gray-100 flex justify-center gap-2">
-                <div className="w-10 h-6 bg-gray-100 rounded flex items-center justify-center text-xs font-bold text-gray-400">
-                  VISA
-                </div>
-                <div className="w-10 h-6 bg-gray-100 rounded flex items-center justify-center text-xs font-bold text-gray-400">
-                  MC
-                </div>
-                <div className="w-10 h-6 bg-gray-100 rounded flex items-center justify-center text-xs font-bold text-blue-500">
-                  PP
-                </div>
+                <div className="w-10 h-6 bg-gray-100 rounded flex items-center justify-center text-xs font-bold text-gray-400">VISA</div>
+                <div className="w-10 h-6 bg-gray-100 rounded flex items-center justify-center text-xs font-bold text-gray-400">MC</div>
+                <div className="w-10 h-6 bg-gray-100 rounded flex items-center justify-center text-xs font-bold text-blue-500">PP</div>
               </div>
             </motion.div>
           </div>

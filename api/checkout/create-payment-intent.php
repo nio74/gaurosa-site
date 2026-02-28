@@ -205,16 +205,58 @@ try {
 
     $subtotal = round($subtotal, 2);
 
-    // Calcolo spedizione
-    $shippingTotal = $subtotal >= FREE_SHIPPING_THRESHOLD ? 0.00 : SHIPPING_COST;
+    // =====================================================
+    // VALIDAZIONE COUPON SERVER-SIDE
+    // =====================================================
+    $couponCode = strtoupper(trim($body['coupon_code'] ?? ''));
+    $discountTotal = 0.00;
+    $appliedCouponId = null;
+
+    if ($couponCode !== '') {
+        $now = date('Y-m-d H:i:s');
+        $stmt = $pdo->prepare("
+            SELECT * FROM promotions
+            WHERE coupon_code = :code
+              AND type = 'coupon'
+              AND is_active = 1
+              AND starts_at <= :now
+              AND ends_at >= :now
+            LIMIT 1
+        ");
+        $stmt->execute([':code' => $couponCode, ':now' => $now]);
+        $couponPromo = $stmt->fetch();
+
+        if (!$couponPromo) {
+            jsonResponse(['success' => false, 'error' => 'Codice coupon non valido o scaduto'], 400);
+        }
+
+        // Verifica limite utilizzi totali
+        if ($couponPromo['max_uses'] !== null && (int)$couponPromo['times_used'] >= (int)$couponPromo['max_uses']) {
+            jsonResponse(['success' => false, 'error' => 'Questo coupon ha raggiunto il limite massimo di utilizzi'], 400);
+        }
+
+        // Calcola sconto coupon
+        if ($couponPromo['discount_type'] === 'percentage') {
+            $discountTotal = round($subtotal * ((float)$couponPromo['discount_value'] / 100), 2);
+        } else {
+            $discountTotal = min((float)$couponPromo['discount_value'], $subtotal);
+        }
+
+        $appliedCouponId = (int)$couponPromo['id'];
+    }
+
+    // Subtotale dopo sconto
+    $discountedSubtotal = max(0, $subtotal - $discountTotal);
+
+    // Calcolo spedizione (basata sul subtotale scontato)
+    $shippingTotal = $discountedSubtotal >= FREE_SHIPPING_THRESHOLD ? 0.00 : SHIPPING_COST;
 
     // IVA inclusa nei prezzi (22%) - calcoliamo la quota IVA per trasparenza
     // taxTotal = totale * 22 / 122 (scorporo IVA)
-    $totalBeforeTax = $subtotal + $shippingTotal;
+    $totalBeforeTax = $discountedSubtotal + $shippingTotal;
     $taxTotal = round($totalBeforeTax * 22 / 122, 2);
 
-    $discountTotal = 0.00;
-    $total = round($subtotal + $shippingTotal, 2);
+    $total = round($discountedSubtotal + $shippingTotal, 2);
 
     // Stripe vuole importo in centesimi
     $amountCents = (int)round($total * 100);
@@ -407,6 +449,16 @@ try {
         }
 
         $pdo->commit();
+
+        // Incrementa contatore utilizzi coupon (se applicato)
+        if ($appliedCouponId !== null) {
+            try {
+                $pdo->prepare("UPDATE promotions SET times_used = times_used + 1 WHERE id = :id")
+                    ->execute([':id' => $appliedCouponId]);
+            } catch (Exception $couponEx) {
+                error_log("Warning: impossibile aggiornare times_used coupon #{$appliedCouponId}: " . $couponEx->getMessage());
+            }
+        }
 
     } catch (Exception $e) {
         $pdo->rollBack();
