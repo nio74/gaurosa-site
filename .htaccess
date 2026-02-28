@@ -1,26 +1,28 @@
-# Serve gaurosa.it static Next.js build from out/ subfolder
+# gaurosa.it - Static Next.js routing (no PHP for pages)
 RewriteEngine On
 RewriteBase /
 
-# Bypass: API PHP files in root and api/ folder
-RewriteRule ^api-.+\.php$ - [L]
-RewriteRule ^api/.+$ - [L]
+# 1. Bypass: API PHP files (serve directly)
+RewriteRule ^api-[^/]+\.php$ - [L]
+RewriteRule ^api/ - [L]
 RewriteRule ^maintenance\.html$ - [L]
 RewriteRule ^maintenance\.json$ - [L]
 
-# Serve static assets from out/ (Next.js chunks, CSS, fonts, images)
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteCond %{DOCUMENT_ROOT}/out%{REQUEST_URI} -f
-RewriteRule ^(.+)$ out/$1 [L]
-
-# Serve static asset directories from out/
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{DOCUMENT_ROOT}/out%{REQUEST_URI} -d
-RewriteRule ^(.+)$ out/$1/ [L]
-
-# If file exists in root (index.php, api-*.php), serve it directly
+# 2. If the exact file exists, serve it (HTML, JS, CSS, images, txt)
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteRule ^ - [L]
 
-# Everything else goes to index.php (router)
-RewriteRule ^ index.php [L]
+# 3. Add trailing slash to directories (redirect)
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^(.+[^/])$ $1/ [R=301,L]
+
+# 4. Try /path/index.html (Next.js static pages with trailingSlash)
+RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI}/index.html -f
+RewriteRule ^(.+[^/])$ $1/index.html [L]
+
+# 5. Try /path.html
+RewriteCond %{DOCUMENT_ROOT}%{REQUEST_URI}.html -f
+RewriteRule ^(.+)$ $1.html [L]
+
+# 6. Fallback: 404
+ErrorDocument 404 /404.html
