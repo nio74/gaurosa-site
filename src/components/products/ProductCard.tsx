@@ -58,6 +58,13 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
             </div>
           )}
 
+          {/* Badge sconto (se compare_at_price > price) */}
+          {product.stock.available && product.compare_at_price && product.compare_at_price > product.price && (
+            <div className="absolute top-3 left-3 bg-rose-600 text-white text-xs font-bold px-2 py-1 rounded-full">
+              -{Math.round((1 - product.price / product.compare_at_price) * 100)}%
+            </div>
+          )}
+
           {/* Azioni hover */}
           <div className="absolute bottom-3 left-3 right-3 flex gap-2 opacity-0 translate-y-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0">
             <Button
@@ -83,9 +90,16 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
           <h3 className="font-medium text-gray-900 line-clamp-2 group-hover:text-gray-600 transition-colors">
             {product.name}
           </h3>
-          <p className="text-lg font-semibold text-gray-900">
-            {formatPrice(product.price)}
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-lg font-semibold text-gray-900">
+              {formatPrice(product.price)}
+            </p>
+            {product.compare_at_price && product.compare_at_price > product.price && (
+              <p className="text-sm text-gray-400 line-through">
+                {formatPrice(product.compare_at_price)}
+              </p>
+            )}
+          </div>
         </div>
       </Link>
     </motion.div>
