@@ -122,25 +122,54 @@ foreach ($automaticPromos as $promo) {
 
         // ---- Bundle 2+1 ----
         case 'bundle_2_1':
-            // Raccoglie tutti gli item che rientrano nella promo, ordina per prezzo ASC
-            $eligibleItems = [];
+            // Collect all eligible units with name info, sort by price ASC
+            $eligibleUnits = []; // each entry: ['price' => float, 'name' => string]
             foreach ($items as $item) {
                 if (promoAppliesToProduct($promo, $item)) {
                     for ($i = 0; $i < (int)($item['quantity'] ?? 1); $i++) {
-                        $eligibleItems[] = (float)$item['price'];
+                        $eligibleUnits[] = [
+                            'price' => (float)$item['price'],
+                            'name'  => $item['name'] ?? $item['code'],
+                        ];
                     }
                 }
             }
-            sort($eligibleItems); // ordina ASC: il più economico è il terzo gratis
+            // Sort ASC by price: cheapest first
+            usort($eligibleUnits, fn($a, $b) => $a['price'] <=> $b['price']);
 
-            $totalEligible = count($eligibleItems);
-            // Ogni 3 articoli, il più economico (primo nell'array ordinato) ha sconto
-            $freePercent = (float)($promo['bundle_free_percent'] ?? 100);
-            $groups = intdiv($totalEligible, 3);
+            $totalEligible = count($eligibleUnits);
+            $freePercent   = (float)($promo['bundle_free_percent'] ?? 100);
+            $groups        = intdiv($totalEligible, 3);
+            $itemsNeeded   = $totalEligible >= 3 ? 0 : (3 - $totalEligible);
+
+            // Calculate discount for complete groups
             for ($g = 0; $g < $groups; $g++) {
-                $cheapestPrice = $eligibleItems[$g]; // il più economico del gruppo
+                $cheapestPrice  = $eligibleUnits[$g]['price'];
                 $promoDiscount += round($cheapestPrice * ($freePercent / 100), 2);
             }
+
+            // Build bundle_info for the frontend banner
+            $cheapestUnit = !empty($eligibleUnits) ? $eligibleUnits[0] : null;
+            // What would the discount be if they added one more item?
+            $potentialDiscount = 0;
+            if ($totalEligible > 0 && $itemsNeeded > 0) {
+                $potentialDiscount = round($cheapestUnit['price'] * ($freePercent / 100), 2);
+            }
+
+            $bundleInfo = [
+                'promo_id'          => $promo['id'],
+                'promo_name'        => $promo['name'],
+                'free_percent'      => $freePercent,
+                'items_in_cart'     => $totalEligible,
+                'items_needed'      => $itemsNeeded,
+                'groups_active'     => $groups,
+                'cheapest_name'     => $cheapestUnit ? $cheapestUnit['name'] : null,
+                'cheapest_price'    => $cheapestUnit ? $cheapestUnit['price'] : null,
+                'discount_applied'  => $promoDiscount,
+                'potential_discount'=> $potentialDiscount,
+                'badge'             => $promo['promo_badge'],
+                'message'           => $promo['promo_message'],
+            ];
             break;
 
         // ---- Soglia carrello ----
@@ -238,4 +267,5 @@ jsonResponse([
     'applied_promotions'  => $appliedPromotions,
     'coupon_valid'        => $couponValid,
     'coupon_error'        => $couponError,
+    'bundle_info'         => $bundleInfo ?? null,
 ]);
