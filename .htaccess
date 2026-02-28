@@ -1,27 +1,26 @@
-# Reindirizza tutto a index.php (tranne file esistenti)
+# Serve gaurosa.it static Next.js build from out/ subfolder
 RewriteEngine On
 RewriteBase /
 
-# Bypass diretto per API manutenzione e file maintenance
-RewriteRule ^api-maintenance\.php$ - [L]
+# Bypass: API PHP files in root and api/ folder
+RewriteRule ^api-.+\.php$ - [L]
+RewriteRule ^api/.+$ - [L]
 RewriteRule ^maintenance\.html$ - [L]
 RewriteRule ^maintenance\.json$ - [L]
 
-# Reindirizza /_next/ verso out/_next/ (build statica Next.js)
+# Serve static assets from out/ (Next.js chunks, CSS, fonts, images)
 RewriteCond %{REQUEST_FILENAME} !-f
-RewriteRule ^_next/(.*)$ out/_next/$1 [L]
+RewriteCond %{DOCUMENT_ROOT}/out%{REQUEST_URI} -f
+RewriteRule ^(.+)$ out/$1 [L]
 
-# Reindirizza /images/ verso out/images/ (logo e immagini statiche)
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteRule ^images/(.*)$ out/images/$1 [L]
+# Serve static asset directories from out/
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{DOCUMENT_ROOT}/out%{REQUEST_URI} -d
+RewriteRule ^(.+)$ out/$1/ [L]
 
-# Reindirizza /uploads/ verso out/uploads/ (immagini prodotti)
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteRule ^uploads/(.*)$ out/uploads/$1 [L]
-
-# Se il file esiste fisicamente nella root, servilo
+# If file exists in root (index.php, api-*.php), serve it directly
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteRule ^ - [L]
 
-# Tutto il resto passa a index.php
+# Everything else goes to index.php (router)
 RewriteRule ^ index.php [L]
