@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState, useRef, useEffect, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -141,12 +142,16 @@ function HeaderContent() {
           <div className="flex items-center justify-between h-16 lg:h-20">
             {/* Logo */}
             <Link href="/" className="flex-shrink-0">
-              <motion.span
-                whileHover={{ scale: 1.05 }}
-                className="text-2xl font-bold tracking-tight text-brand-text"
-              >
-                GAUROSA
-              </motion.span>
+              <motion.div whileHover={{ scale: 1.05 }}>
+                <Image
+                  src="/images/logo-gaurosa.png"
+                  alt="Gaurosa Gioielli"
+                  width={162}
+                  height={80}
+                  priority
+                  className="h-10 lg:h-12 w-auto"
+                />
+              </motion.div>
             </Link>
 
             {/* Desktop Navigation */}
@@ -476,7 +481,7 @@ export default function Header() {
       <header className="fixed top-0 left-0 right-0 z-50 bg-brand-pink/90 backdrop-blur-md border-b border-brand-pink-border/30">
         <nav className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 lg:h-20">
-            <span className="text-2xl font-bold tracking-tight text-brand-text">GAUROSA</span>
+            <Image src="/images/logo-gaurosa.png" alt="Gaurosa Gioielli" width={162} height={80} className="h-10 lg:h-12 w-auto" />
           </div>
         </nav>
       </header>

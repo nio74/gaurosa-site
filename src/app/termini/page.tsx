@@ -121,7 +121,6 @@ export default function TerminiPage() {
                     'Carta di credito / debito (Visa, Mastercard, American Express)',
                     'PayPal',
                     'Bonifico bancario',
-                    'Contrassegno (supplemento di 7,00 €)',
                   ].map((method, i) => (
                     <li key={i} className="flex items-center gap-2 text-sm text-gray-600">
                       <ChevronRight className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />

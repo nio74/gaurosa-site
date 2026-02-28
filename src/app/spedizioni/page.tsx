@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Truck, Clock, MapPin, Package, AlertCircle, CreditCard } from 'lucide-react';
+import { Truck, Clock, MapPin, Package, AlertCircle } from 'lucide-react';
 
 const highlights = [
   {
@@ -18,11 +18,6 @@ const highlights = [
     icon: Package,
     title: 'Imballaggio Sicuro',
     description: 'Confezione regalo e garanzia sempre inclusi',
-  },
-  {
-    icon: CreditCard,
-    title: 'Contrassegno',
-    description: 'Disponibile con supplemento di 7,00 €',
   },
 ];
 
@@ -50,7 +45,7 @@ export default function SpedizioniPage() {
       {/* Highlights */}
       <section className="py-16 bg-white">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-3xl mx-auto">
             {highlights.map((item, index) => (
               <motion.div
                 key={item.title}
@@ -177,22 +172,6 @@ export default function SpedizioniPage() {
               </div>
             </motion.div>
 
-            {/* Contrassegno */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-            >
-              <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                Spese di Contrassegno
-              </h2>
-              <div className="bg-white rounded-xl p-6 shadow-sm">
-                <p className="text-gray-600">
-                  Le spese di contrassegno sono pari a <strong className="text-gray-900">7,00 €</strong>.
-                </p>
-              </div>
-            </motion.div>
-
             {/* Isole e Estero */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -237,10 +216,6 @@ export default function SpedizioniPage() {
                     <tr>
                       <td className="px-6 py-4 text-gray-600">Spedizione standard (ordini &lt; 45 €)</td>
                       <td className="px-6 py-4 text-right font-semibold text-gray-900">5,90 €</td>
-                    </tr>
-                    <tr>
-                      <td className="px-6 py-4 text-gray-600">Supplemento contrassegno</td>
-                      <td className="px-6 py-4 text-right font-semibold text-gray-900">7,00 €</td>
                     </tr>
                     <tr>
                       <td className="px-6 py-4 text-gray-600">Tempi di consegna</td>
