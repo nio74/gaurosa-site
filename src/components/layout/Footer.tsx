@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Instagram, Facebook, Youtube, Mail, Phone, MapPin, MessageCircle } from 'lucide-react';
 
 const footerLinks = {
@@ -9,11 +10,17 @@ const footerLinks = {
     { name: 'Collane', href: '/prodotti?sottocategoria=collana' },
     { name: 'Orecchini', href: '/prodotti?sottocategoria=orecchini' },
   ],
-  info: [
+  assistenza: [
     { name: 'Chi Siamo', href: '/chi-siamo' },
-    { name: 'Contatti', href: '/contatti' },
+    { name: 'Come Acquistare', href: '/come-acquistare' },
+    { name: 'Metodi di Pagamento', href: '/metodi-di-pagamento' },
+    { name: 'Pagamento Sicuro', href: '/pagamento-sicuro' },
     { name: 'Spedizioni', href: '/spedizioni' },
     { name: 'Resi e Garanzia', href: '/resi' },
+    { name: 'Guida Misura Anelli', href: '/guida-misura-anelli' },
+    { name: 'Modulo Reso', href: '/modulo-reso' },
+    { name: 'Modulo Incisioni', href: '/modulo-incisioni' },
+    { name: 'Cambio Taglia', href: '/modulo-cambio-taglia' },
   ],
   legal: [
     { name: 'Privacy Policy', href: '/privacy' },
@@ -35,10 +42,16 @@ export default function Footer() {
   return (
     <footer className="bg-brand-rose text-brand-pink/90">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-8 lg:gap-10">
           {/* Brand */}
           <div className="space-y-4">
-            <h2 className="text-2xl font-bold text-brand-white tracking-tight">GAUROSA</h2>
+            <Image
+              src="/images/logo-gaurosa.png"
+              alt="Gaurosa Gioielli"
+              width={162}
+              height={80}
+              className="h-12 w-auto brightness-0 invert"
+            />
             <p className="text-sm text-brand-pink/70 max-w-xs">
               Gioielli artigianali di qualità, realizzati a mano con passione. 
               Dal produttore al consumatore dal 1960.
@@ -78,13 +91,13 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Info Links */}
-          <div>
+          {/* Assistenza Clienti */}
+          <div className="lg:col-span-2 xl:col-span-1">
             <h3 className="text-sm font-semibold text-brand-white uppercase tracking-wider mb-4">
-              Informazioni
+              Assistenza Clienti
             </h3>
-            <ul className="space-y-3">
-              {footerLinks.info.map((link) => (
+            <ul className="space-y-2.5">
+              {footerLinks.assistenza.map((link) => (
                 <li key={link.name}>
                   <Link
                     href={link.href}
