@@ -94,6 +94,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         jsonResponse(['success' => false, 'error' => 'Nessuna promozione ricevuta'], 400);
     }
 
+    // Delete promotions that no longer exist in MazGest
+    // active_ids = list of IDs currently in MazGest; anything else gets removed
+    $activeIds = $body['active_ids'] ?? null;
+    if (is_array($activeIds) && count($activeIds) > 0) {
+        $placeholders = implode(',', array_fill(0, count($activeIds), '?'));
+        $deleteStmt = $pdo->prepare("DELETE FROM promotions WHERE id NOT IN ($placeholders)");
+        $deleteStmt->execute(array_values($activeIds));
+        $deleted = $deleteStmt->rowCount();
+        if ($deleted > 0) {
+            error_log("[PromotionsSync] Deleted $deleted stale promotions not in active_ids");
+        }
+    } elseif (is_array($activeIds) && count($activeIds) === 0) {
+        // No promotions in MazGest at all — delete everything
+        $pdo->exec("DELETE FROM promotions");
+        error_log("[PromotionsSync] Deleted all promotions (active_ids is empty)");
+    }
+    // If active_ids not sent (old client), skip deletion for backwards compatibility
+
     $synced = 0;
     $errors = [];
 
