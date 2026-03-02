@@ -97,6 +97,8 @@ function calcItemDiscount(array $promo, float $price, int $qty): float {
 
 // ==========================================
 // Applica promozioni automatiche (non coupon)
+// Se è presente un coupon valido, le promozioni automatiche NON si applicano
+// (il coupon è alternativo alle promo automatiche — vince il maggiore)
 // ==========================================
 $appliedPromotions = [];
 $totalDiscount = 0.0;
@@ -105,7 +107,25 @@ $totalDiscount = 0.0;
 $automaticPromos = array_filter($activePromotions, fn($p) => $p['type'] !== 'coupon');
 $couponPromos    = array_filter($activePromotions, fn($p) => $p['type'] === 'coupon');
 
+// Pre-check: se è stato inviato un coupon, verifica subito se è valido
+// In tal caso saltiamo le promozioni automatiche e applichiamo solo il coupon
+$couponRequestedAndValid = false;
+if ($couponCode !== '') {
+    foreach ($couponPromos as $cp) {
+        if (strtoupper($cp['coupon_code'] ?? '') === $couponCode) {
+            $maxUses = $cp['max_uses'];
+            $timesUsed = (int)$cp['times_used'];
+            if ($maxUses === null || $timesUsed < (int)$maxUses) {
+                $couponRequestedAndValid = true;
+            }
+            break;
+        }
+    }
+}
+
+// Applica promozioni automatiche SOLO se non c'è un coupon valido attivo
 foreach ($automaticPromos as $promo) {
+    if ($couponRequestedAndValid) break; // coupon attivo → salta tutte le promo automatiche
     $promoDiscount = 0.0;
 
     switch ($promo['type']) {

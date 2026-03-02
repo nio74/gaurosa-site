@@ -126,7 +126,11 @@ export default function CartPage() {
   };
 
   // Totale con sconti
-  const totalDiscount = autoDiscount + couponDiscount;
+  // Se c'è un coupon attivo, le promozioni automatiche non si sommano (sono alternative)
+  // Il PHP già esclude le promo automatiche quando c'è un coupon valido,
+  // ma azzeriamo anche lato frontend per sicurezza
+  const effectiveAutoDiscount = couponApplied ? 0 : autoDiscount;
+  const totalDiscount = effectiveAutoDiscount + couponDiscount;
   const discountedSubtotal = Math.max(0, cart.subtotal - totalDiscount);
   const shippingCost = discountedSubtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
   const finalTotal = discountedSubtotal + shippingCost;
@@ -507,14 +511,14 @@ export default function CartPage() {
                   <span className="font-medium">{formatPrice(cart.subtotal)}</span>
                 </div>
 
-                {/* Sconto automatico */}
-                {autoDiscount > 0 && (
+                {/* Sconto automatico — nascosto se c'è un coupon attivo */}
+                {effectiveAutoDiscount > 0 && (
                   <div className="flex justify-between text-green-600">
                     <span className="flex items-center gap-1">
                       <Tag className="w-3.5 h-3.5" />
                       {autoPromoLabel || 'Promozione'}
                     </span>
-                    <span className="font-medium">-{formatPrice(autoDiscount)}</span>
+                    <span className="font-medium">-{formatPrice(effectiveAutoDiscount)}</span>
                   </div>
                 )}
 
