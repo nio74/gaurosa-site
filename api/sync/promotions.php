@@ -13,7 +13,7 @@ require_once __DIR__ . '/../config.php';
 
 // CORS headers
 header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Methods: GET, POST, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, X-Api-Key, x-api-key');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -89,14 +89,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $body = getJsonBody();
     $promotions = $body['promotions'] ?? [];
+    $activeIds = $body['active_ids'] ?? null;
 
-    if (empty($promotions)) {
+    // Allow empty promotions array only if active_ids is explicitly provided
+    // (means "delete all orphans, nothing to upsert")
+    if (empty($promotions) && !is_array($activeIds)) {
         jsonResponse(['success' => false, 'error' => 'Nessuna promozione ricevuta'], 400);
     }
 
     // Delete promotions that no longer exist in MazGest
     // active_ids = list of IDs currently in MazGest; anything else gets removed
-    $activeIds = $body['active_ids'] ?? null;
     if (is_array($activeIds) && count($activeIds) > 0) {
         $placeholders = implode(',', array_fill(0, count($activeIds), '?'));
         $deleteStmt = $pdo->prepare("DELETE FROM promotions WHERE id NOT IN ($placeholders)");
@@ -210,6 +212,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'errors'  => $errors,
         'message' => "Sincronizzate {$synced} promozioni",
     ]);
+}
+
+// DELETE: Rimuovi una singola promozione per ID (chiamata da MazGest quando si elimina una promo)
+if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
+    $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+    if (!$id) {
+        jsonResponse(['success' => false, 'error' => 'ID promozione mancante'], 400);
+    }
+
+    $stmt = $pdo->prepare("DELETE FROM promotions WHERE id = ?");
+    $stmt->execute([$id]);
+    $deleted = $stmt->rowCount();
+
+    if ($deleted > 0) {
+        error_log("[PromotionsSync] Deleted promotion #$id via remote DELETE");
+        jsonResponse(['success' => true, 'message' => "Promozione #$id eliminata"]);
+    } else {
+        // Not found is still OK — idempotent
+        jsonResponse(['success' => true, 'message' => "Promozione #$id non trovata (già eliminata)"]);
+    }
 }
 
 jsonResponse(['success' => false, 'error' => 'Metodo non supportato'], 405);
