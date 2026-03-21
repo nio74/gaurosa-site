@@ -3,6 +3,17 @@
 RewriteEngine On
 RewriteBase /
 
+# ── 0. Maintenance mode ─────────────────────────────────────────────
+# When .maintenance_enabled file exists, show maintenance page
+# Excludes: API calls, maintenance page itself, maintenance API
+RewriteCond %{DOCUMENT_ROOT}/.maintenance_enabled -f
+RewriteCond %{REQUEST_URI} !^/api-
+RewriteCond %{REQUEST_URI} !^/api/
+RewriteCond %{REQUEST_URI} !^/maintenance\.html$
+RewriteCond %{REQUEST_URI} !^/maintenance\.json$
+RewriteRule ^.*$ /maintenance.html [R=503,L]
+ErrorDocument 503 /maintenance.html
+
 # ── 1. API PHP (root level) ──────────────────────────────────────────
 RewriteRule ^api-[^/]+\.php$ - [L]
 RewriteRule ^maintenance\.html$ - [L]
