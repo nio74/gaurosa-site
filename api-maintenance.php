@@ -93,13 +93,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $currentState['enabled_at'] = null;
     }
 
+    // Create/delete .maintenance_enabled flag file for .htaccess
+    $flagFile = __DIR__ . '/.maintenance_enabled';
+    if ($currentState['enabled']) {
+        file_put_contents($flagFile, date('Y-m-d H:i:s'));
+    } else {
+        if (file_exists($flagFile)) {
+            unlink($flagFile);
+        }
+    }
+
     // Write state
     if (writeMaintenanceState($maintenanceFile, $currentState)) {
         jsonResponse([
             'success' => true,
             'data' => $currentState,
-            'message' => $currentState['enabled'] 
-                ? 'Modalita manutenzione ATTIVATA' 
+            'message' => $currentState['enabled']
+                ? 'Modalita manutenzione ATTIVATA'
                 : 'Modalita manutenzione DISATTIVATA',
         ]);
     } else {
