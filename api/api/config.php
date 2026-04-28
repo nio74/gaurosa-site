@@ -20,15 +20,28 @@ $isLocal = $host === 'localhost'
         || strpos($host, '127.0.0.1') !== false;
 define('IS_LOCAL', $isLocal);
 
-if ($isLocal) {
+// Flag per usare il DB di produzione Hostinger in locale via SSH tunnel (porta 3307)
+// Comando SSH tunnel: ssh -L 3307:127.0.0.1:3306 -p 65002 u341208956@82.25.102.134
+$useProductionDb = true;
+
+if ($isLocal && $useProductionDb) {
+    // SVILUPPO LOCALE con DB PRODUZIONE via SSH tunnel
+    define('DB_HOST', 'localhost');
+    define('DB_PORT', 3307);
+    define('DB_NAME', 'u341208956_gaurosasito');
+    define('DB_USER', 'u341208956_paolo');
+    define('DB_PASS', '6#KvGR!d');
+} elseif ($isLocal) {
     // SVILUPPO LOCALE (XAMPP)
     define('DB_HOST', $secrets['db_local']['host']);
+    define('DB_PORT', 3306);
     define('DB_NAME', $secrets['db_local']['name']);
     define('DB_USER', $secrets['db_local']['user']);
     define('DB_PASS', $secrets['db_local']['pass']);
 } else {
     // PRODUZIONE (HOSTINGER)
     define('DB_HOST', $secrets['db_production']['host']);
+    define('DB_PORT', 3306);
     define('DB_NAME', $secrets['db_production']['name']);
     define('DB_USER', $secrets['db_production']['user']);
     define('DB_PASS', $secrets['db_production']['pass']);
@@ -38,8 +51,8 @@ if ($isLocal) {
 define('JWT_SECRET', $secrets['jwt_secret']);
 define('JWT_EXPIRY', 3600 * 24 * 7); // 7 giorni
 
-// MazGest API
-define('MAZGEST_API_URL', $isLocal ? 'http://localhost:5000' : 'https://api.mazgest.org');
+// MazGest API - quando si usa il DB di produzione, puntare anche all'API di produzione
+define('MAZGEST_API_URL', ($isLocal && !$useProductionDb) ? 'http://localhost:5000' : 'https://api.mazgest.org');
 define('MAZGEST_API_KEY', $secrets['mazgest_api_key']);
 
 // Sync API Key (usata per sincronizzazione prodotti da MazGest)
@@ -88,7 +101,7 @@ function getDbConnection() {
     if ($pdo === null) {
         try {
             $pdo = new PDO(
-                "mysql:host=" . DB_HOST . ";dbname=" . DB_NAME . ";charset=utf8mb4",
+                "mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";charset=utf8mb4",
                 DB_USER,
                 DB_PASS,
                 [

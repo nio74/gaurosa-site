@@ -50,3 +50,6 @@ next-env.d.ts
 # uploads (immagini prodotti - sincronizzate, non committare)
 /public/uploads/products/*
 !/public/uploads/products/.gitkeep
+
+# backups DB
+/backups/

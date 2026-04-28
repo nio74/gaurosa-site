@@ -6,6 +6,7 @@
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/jwt.php';
 require_once __DIR__ . '/email.php';
+require_once __DIR__ . '/../lib/mazgest-sync.php';
 
 // Solo POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -91,16 +92,44 @@ try {
 
     $customerId = $pdo->lastInsertId();
 
-    // Invia email di verifica
-    $verificationUrl = SITE_URL . '/verifica-email/?token=' . $verificationToken;
-    $emailSent = sendVerificationEmail($email, $firstName, $verificationUrl);
+    // Sincronizza subito con MazGest (in tutti gli ambienti)
+    $syncResult = syncCustomerToMazGest($customerId);
+    error_log("[Register] MazGest sync for customer $customerId: " . ($syncResult ? 'OK' : 'FAILED'));
 
-    jsonResponse([
-        'success' => true,
-        'message' => 'Registrazione completata! Controlla la tua email per verificare l\'account.',
-        'customerId' => $customerId,
-        'emailSent' => $emailSent
-    ], 201);
+    if (IS_LOCAL) {
+        // SVILUPPO LOCALE: auto-verifica email (no bisogno di cliccare link)
+        $stmt = $pdo->prepare("
+            UPDATE customers
+            SET email_verified = 1,
+                email_verified_at = NOW(),
+                verification_token = NULL,
+                token_expires_at = NULL,
+                updated_at = NOW()
+            WHERE id = ?
+        ");
+        $stmt->execute([$customerId]);
+
+        jsonResponse([
+            'success' => true,
+            'message' => 'Registrazione completata! (Dev: email auto-verificata)',
+            'customerId' => $customerId,
+            'emailSent' => false,
+            'autoVerified' => true,
+            'mazgestSync' => $syncResult
+        ], 201);
+    } else {
+        // PRODUZIONE: invia email di verifica normalmente
+        $verificationUrl = SITE_URL . '/verifica-email/?token=' . $verificationToken;
+        $emailSent = sendVerificationEmail($email, $firstName, $verificationUrl);
+
+        jsonResponse([
+            'success' => true,
+            'message' => 'Registrazione completata! Controlla la tua email per verificare l\'account.',
+            'customerId' => $customerId,
+            'emailSent' => $emailSent,
+            'mazgestSync' => $syncResult
+        ], 201);
+    }
 
 } catch (Exception $e) {
     jsonResponse(['success' => false, 'error' => 'Errore durante la registrazione: ' . $e->getMessage()], 500);
