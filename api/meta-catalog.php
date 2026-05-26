@@ -160,12 +160,20 @@ try {
         $priceStr     = number_format($hasSale ? $comparePrice : $regularPrice, 2, '.', '') . ' EUR';
         $salePriceStr = $hasSale ? number_format($regularPrice, 2, '.', '') . ' EUR' : null;
 
-        $brand        = xmlEscape($p['brand_name'] ?? 'Gaurosa');
-        $title        = xmlEscape($p['name']);
-        $productLink  = 'https://gaurosa.it/prodotti/' . xmlEscape($p['code']);
-        $availability = xmlEscape(getAvailability($p['stock_status'], (int)$p['stock']));
-        $condition    = xmlEscape(getCondition($p['item_condition']));
-        $googleCat    = xmlEscape(getGoogleCategory($p['subcategory'], $p['main_category']));
+        $brand           = xmlEscape($p['brand_name'] ?? 'Gaurosa');
+        $title           = xmlEscape($p['name']);
+        $productLink     = 'https://gaurosa.it/prodotti/' . xmlEscape($p['code']);
+        $availabilityRaw = getAvailability($p['stock_status'], (int)$p['stock']);
+        $availability    = xmlEscape($availabilityRaw);
+        $condition       = xmlEscape(getCondition($p['item_condition']));
+        $googleCat       = xmlEscape(getGoogleCategory($p['subcategory'], $p['main_category']));
+
+        // Meta Shops require g:quantity_to_sell_on_facebook >= 1 for "in stock" items.
+        // Jewelry pieces are typically unique → if DB stock is missing/0 but item is in stock, default to 1.
+        $quantity = max(0, (int)($p['stock'] ?? 0));
+        if ($availabilityRaw === 'in stock' && $quantity === 0) {
+            $quantity = 1;
+        }
 
         $xml .= '    <item>' . "\n";
         $xml .= '      <g:id>'          . xmlEscape($p['code']) . '</g:id>' . "\n";
@@ -174,6 +182,7 @@ try {
         $xml .= '      <g:link>'        . $productLink . '</g:link>' . "\n";
         $xml .= '      <g:image_link>'  . xmlEscape($imageUrl) . '</g:image_link>' . "\n";
         $xml .= '      <g:availability>' . $availability . '</g:availability>' . "\n";
+        $xml .= '      <g:quantity_to_sell_on_facebook>' . $quantity . '</g:quantity_to_sell_on_facebook>' . "\n";
         $xml .= '      <g:price>'       . xmlEscape($priceStr) . '</g:price>' . "\n";
 
         if ($salePriceStr) {
