@@ -14,6 +14,7 @@
 
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../checkout/order-email.php';
+require_once __DIR__ . '/../checkout/stock-helpers.php';
 
 // Webhook non usa CORS / OPTIONS - è server-to-server
 // Ma gestiamo comunque le headers per sicurezza
@@ -166,6 +167,21 @@ function handlePaymentIntentSucceeded($paymentIntent) {
         }
     } else {
         error_log("[Stripe Webhook] Ordine {$order['order_number']} non aggiornato (race condition o già paid)");
+    }
+
+    // Decremento stock di backup: se confirm-order non è stato chiamato (browser
+    // chiuso, timeout, rete), il webhook è l'ultima rete di sicurezza.
+    // deductOrderStock() è idempotente — se confirm-order ha già decrementato,
+    // ritorna early con skipped=true.
+    try {
+        $stockResult = deductOrderStock($pdo, $order['id']);
+        if ($stockResult['skipped']) {
+            error_log("[Stripe Webhook] Stock già decrementato per ordine {$order['order_number']}");
+        } else {
+            error_log("[Stripe Webhook] Stock decrementato per ordine {$order['order_number']}: {$stockResult['deducted']} articoli");
+        }
+    } catch (Exception $stockError) {
+        error_log("[Stripe Webhook] ⚠️ Errore decremento stock (non bloccante): " . $stockError->getMessage());
     }
 }
 

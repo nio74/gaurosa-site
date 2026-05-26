@@ -35,6 +35,9 @@ $billingAddress = $body['billingAddress'] ?? null;
 $requiresInvoice = (bool)($body['requiresInvoice'] ?? false);
 $invoiceData = $body['invoiceData'] ?? null;
 $notes = trim($body['notes'] ?? '');
+// Coupon code (camelCase o snake_case)
+$couponCodeRaw = $body['couponCode'] ?? $body['coupon_code'] ?? null;
+$couponCode = !empty($couponCodeRaw) ? strtoupper(trim($couponCodeRaw)) : null;
 
 // Validazione items
 if (empty($items) || !is_array($items)) {
@@ -182,10 +185,83 @@ try {
 
     $subtotal = round($subtotal, 2);
     $shippingTotal = $subtotal >= FREE_SHIPPING_THRESHOLD ? 0.00 : SHIPPING_COST;
-    $totalBeforeTax = $subtotal + $shippingTotal;
-    $taxTotal = round($totalBeforeTax * 22 / 122, 2);
+
+    // =====================================================
+    // VALIDAZIONE E APPLICAZIONE COUPON CODE
+    // =====================================================
     $discountTotal = 0.00;
-    $total = round($subtotal + $shippingTotal, 2);
+    $couponPromotionId = null;
+    $couponAppliedCode = null;
+    $couponError = null;
+
+    if ($couponCode) {
+        $stmt = $pdo->prepare("
+            SELECT id, name, type, discount_type, discount_value,
+                   coupon_code, max_uses, max_uses_per_user, times_used,
+                   starts_at, ends_at, is_active
+            FROM promotions
+            WHERE coupon_code = :code AND is_active = 1
+            LIMIT 1
+        ");
+        $stmt->execute(['code' => $couponCode]);
+        $promo = $stmt->fetch();
+        $now = date('Y-m-d H:i:s');
+
+        if (!$promo) {
+            $couponError = "Il codice sconto '{$couponCode}' non è valido o è stato disattivato";
+        } elseif ($promo['starts_at'] > $now || $promo['ends_at'] < $now) {
+            $couponError = "Il codice sconto '{$couponCode}' è scaduto o non ancora valido";
+        } elseif ($promo['max_uses'] !== null && (int)$promo['times_used'] >= (int)$promo['max_uses']) {
+            $couponError = "Il codice sconto '{$couponCode}' ha raggiunto il limite massimo di utilizzi";
+        } else {
+            $perUserLimit = (int)($promo['max_uses_per_user'] ?? 0);
+            if ($perUserLimit > 0 && !empty($customer['email'])) {
+                $stmt = $pdo->prepare("
+                    SELECT COUNT(*) AS used_count
+                    FROM orders
+                    WHERE customer_email = :email
+                      AND customer_notes LIKE :coupon_marker
+                      AND status NOT IN ('cancelled', 'refunded')
+                ");
+                $stmt->execute([
+                    'email' => strtolower($customer['email']),
+                    'coupon_marker' => '[COUPON:' . $couponCode . ']%',
+                ]);
+                $usedByUser = (int)$stmt->fetch()['used_count'];
+                if ($usedByUser >= $perUserLimit) {
+                    $couponError = "Hai già usato il codice '{$couponCode}'. È valido una sola volta per cliente";
+                }
+            }
+
+            if (!$couponError) {
+                if ($promo['discount_type'] === 'percentage') {
+                    $discountTotal = round($subtotal * ((float)$promo['discount_value']) / 100, 2);
+                } else {
+                    $discountTotal = min(round((float)$promo['discount_value'], 2), $subtotal);
+                }
+                if ($discountTotal > $subtotal) {
+                    $discountTotal = $subtotal;
+                }
+                $couponPromotionId = (int)$promo['id'];
+                $couponAppliedCode = $couponCode;
+                error_log("[PayPal] ✅ Coupon '{$couponCode}' applicato: -€{$discountTotal}");
+            }
+        }
+
+        if ($couponError) {
+            error_log("[PayPal] ❌ Coupon '{$couponCode}' rifiutato: {$couponError}");
+            jsonResponse([
+                'success' => false,
+                'error' => $couponError,
+                'couponInvalid' => true,
+                'couponCode' => $couponCode,
+            ], 400);
+        }
+    }
+
+    $total = round($subtotal + $shippingTotal - $discountTotal, 2);
+    if ($total < 0) $total = 0.00;
+    $taxTotal = round($total * 22 / 122, 2);
 
     if ($total < 0.50) {
         jsonResponse(['success' => false, 'error' => "L'importo minimo dell'ordine è 0,50 €"], 400);
@@ -419,7 +495,10 @@ try {
             'payment_method' => 'paypal',
             'payment_id' => $paypalOrderId,
             'shipping_method' => $shippingTotal > 0 ? 'standard' : 'gratuita',
-            'customer_notes' => $notes ?: null,
+            // Prefisso coupon nelle note per tracciabilità (no schema change necessario)
+            'customer_notes' => $couponAppliedCode
+                ? '[COUPON:' . $couponAppliedCode . '] ' . ($notes ?: '')
+                : ($notes ?: null),
         ]);
 
         $orderId = (int)$pdo->lastInsertId();
@@ -451,6 +530,12 @@ try {
                 'unit_price' => $vItem['unitPrice'],
                 'total_price' => $vItem['totalPrice'],
             ]);
+        }
+
+        // Incrementa times_used del coupon (dentro la stessa transazione per consistency)
+        if ($couponPromotionId) {
+            $stmt = $pdo->prepare("UPDATE promotions SET times_used = times_used + 1 WHERE id = :id");
+            $stmt->execute(['id' => $couponPromotionId]);
         }
 
         $pdo->commit();

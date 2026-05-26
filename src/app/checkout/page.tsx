@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   User, 
@@ -259,8 +259,15 @@ function PayPalStep({ orderId, paypalOrderId, onSuccess, onError }: PayPalStepPr
 
 export default function CheckoutPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { cart, isLoaded, clearCart } = useCart();
-  
+
+  // Coupon ricevuto via query string da /carrello (?coupon=GAUROSA10)
+  const couponFromUrl = searchParams?.get('coupon')?.trim().toUpperCase() || null;
+  const [appliedCoupon, setAppliedCoupon] = useState<string | null>(couponFromUrl);
+  const [couponDiscount, setCouponDiscount] = useState<number>(0);
+  const [couponLabel, setCouponLabel] = useState<string | null>(null);
+
   // Form state
   const [formData, setFormData] = useState<CheckoutData>({
     customer: {
@@ -290,13 +297,16 @@ export default function CheckoutPage() {
   const [showPayment, setShowPayment] = useState(false);
   const [generalError, setGeneralError] = useState<string>('');
   const [bankDetails, setBankDetails] = useState<any>(null);
+  // Flag attivo durante la creazione ordine: blocca il redirect "carrello vuoto"
+  // dopo clearCart() in attesa che parta il router.push verso /ordine/conferma
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Redirect if cart is empty (only after cart is loaded from localStorage)
   useEffect(() => {
-    if (isLoaded && cart.items.length === 0 && !showPayment) {
+    if (isLoaded && cart.items.length === 0 && !showPayment && !isSubmitting) {
       router.push('/carrello');
     }
-  }, [isLoaded, cart.items.length, router, showPayment]);
+  }, [isLoaded, cart.items.length, router, showPayment, isSubmitting]);
 
   // Fire Meta Pixel InitiateCheckout once when cart is loaded
   useEffect(() => {
@@ -311,6 +321,43 @@ export default function CheckoutPage() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoaded]);
+
+  // Valida il coupon ricevuto da /carrello (query string ?coupon=...) e calcola lo sconto.
+  // Server-side validation: non ci fidiamo del valore dalla URL.
+  useEffect(() => {
+    const validateCoupon = async () => {
+      if (!appliedCoupon || !isLoaded || cart.items.length === 0) return;
+      try {
+        const items = cart.items.map(item => ({
+          productCode: item.product.code,
+          quantity: item.quantity,
+          unitPrice: item.product.price,
+        }));
+        const res = await fetch('/api/apply-promotion.php', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items, subtotal: cart.subtotal, coupon_code: appliedCoupon }),
+        });
+        const data = await res.json();
+        if (data.success && data.coupon_valid) {
+          const couponPromo = data.applied_promotions?.find((p: { type: string }) => p.type === 'coupon');
+          setCouponDiscount(couponPromo?.discount || 0);
+          setCouponLabel(couponPromo?.label || `-${appliedCoupon}`);
+        } else {
+          // Coupon non valido: rimuovilo
+          setAppliedCoupon(null);
+          setCouponDiscount(0);
+          setCouponLabel(null);
+        }
+      } catch (err) {
+        console.error('Errore validazione coupon:', err);
+        setAppliedCoupon(null);
+        setCouponDiscount(0);
+      }
+    };
+    validateCoupon();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appliedCoupon, isLoaded, cart.items.length, cart.subtotal]);
 
   // Try to fetch user data if logged in
   useEffect(() => {
@@ -428,15 +475,44 @@ export default function CheckoutPage() {
     }
   };
 
+  /**
+   * Gestisce errore coupon dal backend (couponInvalid: true).
+   * Chiede all'utente se continuare senza sconto o tornare al carrello.
+   * Ritorna true se ha gestito l'errore (così il chiamante NON deve fare altro),
+   * false se non era un errore coupon (lasciare al chiamante mostrare l'errore generico).
+   */
+  const handleCouponError = (result: { error?: string; couponInvalid?: boolean; couponCode?: string }): boolean => {
+    if (!result.couponInvalid) return false;
+
+    const codeText = result.couponCode ? ` "${result.couponCode}"` : '';
+    const message = `${result.error || 'Codice sconto non valido'}\n\nVuoi continuare senza il codice${codeText}?\n\n• OK: ricarica il checkout senza il coupon\n• Annulla: torna al carrello per modificarlo`;
+
+    if (window.confirm(message)) {
+      // Continua senza sconto: rimuovi coupon dallo state e dalla URL, l'utente cliccherà di nuovo
+      setAppliedCoupon(null);
+      setCouponDiscount(0);
+      setCouponLabel(null);
+      // Aggiorna URL senza il coupon (next/navigation router.replace mantiene posizione)
+      router.replace('/checkout');
+      setGeneralError('Coupon rimosso. Clicca di nuovo su "Conferma ordine" per procedere senza sconto.');
+    } else {
+      // Torna al carrello
+      router.push('/carrello');
+    }
+    return true;
+  };
+
   const handleSubmit = async () => {
     setGeneralError('');
-    
+
     if (!validateForm()) {
       setGeneralError('Compila tutti i campi richiesti');
       return;
     }
 
     setIsLoading(true);
+    // Blocca il redirect "carrello vuoto" tra clearCart() e router.push('/ordine/conferma')
+    setIsSubmitting(true);
 
     try {
       // Transform cart items to the format PHP expects
@@ -463,6 +539,11 @@ export default function CheckoutPage() {
         requiresInvoice: formData.requiresInvoice,
         invoiceData: formData.requiresInvoice ? formData.invoiceData : null,
         notes: formData.notes || '',
+        // Coupon code applicato dal carrello (validato server-side dal backend)
+        couponCode: appliedCoupon || null,
+        // Consenso marketing opzionale per sync MazGest e Brevo
+        // (campo non ancora esposto nel form - default false; aggiungere checkbox in futuro)
+        marketingConsent: (formData as { marketingConsent?: boolean }).marketingConsent || false,
       };
 
       if (formData.paymentMethod === 'bank_transfer') {
@@ -482,7 +563,10 @@ export default function CheckoutPage() {
           clearCart();
           router.push(`/ordine/conferma?payment_method=bank_transfer&order_id=${result.orderId}&order_number=${result.orderNumber}&total=${result.totals.total}&redirect_status=succeeded`);
         } else {
-          setGeneralError(result.error || 'Errore nella creazione dell\'ordine');
+          setIsSubmitting(false);
+          if (!handleCouponError(result)) {
+            setGeneralError(result.error || 'Errore nella creazione dell\'ordine');
+          }
         }
       } else if (formData.paymentMethod === 'paypal') {
         // PayPal flow: create PayPal order + DB order
@@ -500,7 +584,10 @@ export default function CheckoutPage() {
           setOrderId(result.orderId);
           setShowPayment(true);
         } else {
-          setGeneralError(result.error || 'Errore nella creazione del pagamento PayPal');
+          setIsSubmitting(false);
+          if (!handleCouponError(result)) {
+            setGeneralError(result.error || 'Errore nella creazione del pagamento PayPal');
+          }
         }
       } else {
         // Stripe flow (card / klarna): create PaymentIntent + DB order
@@ -518,17 +605,22 @@ export default function CheckoutPage() {
           setOrderId(result.orderId);
           setShowPayment(true);
         } else {
-          setGeneralError(result.error || 'Errore nella creazione del pagamento');
+          setIsSubmitting(false);
+          if (!handleCouponError(result)) {
+            setGeneralError(result.error || 'Errore nella creazione del pagamento');
+          }
         }
       }
     } catch (error) {
       setGeneralError('Errore di rete. Riprova tra un momento.');
+      setIsSubmitting(false); // Sblocca per permettere retry
     } finally {
       setIsLoading(false);
     }
   };
 
   const handlePaymentSuccess = () => {
+    setIsSubmitting(true); // Blocca redirect prima di clearCart()
     clearCart();
     if (formData.paymentMethod === 'paypal') {
       router.push(`/ordine/conferma?payment_method=paypal&paypal_order_id=${paypalOrderId}&order_id=${orderId}&redirect_status=succeeded`);

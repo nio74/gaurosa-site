@@ -9,7 +9,12 @@
 
 /**
  * Deduct stock for all items in an order.
- * 
+ *
+ * Idempotent: il primo caller a passare imposta orders.stock_deducted_at; i caller
+ * successivi (es. webhook che arriva dopo confirm-order, oppure update-order-status
+ * dopo che il bonifico ha già decrementato al checkout) ritornano early con
+ * skipped=true senza toccare lo stock.
+ *
  * @param PDO $pdo Database connection
  * @param int $orderId The order ID
  * @return array Results with deducted items and any warnings
@@ -17,9 +22,24 @@
 function deductOrderStock($pdo, $orderId) {
     $results = [
         'deducted' => 0,
+        'skipped' => false,
         'warnings' => [],
         'details' => [],
     ];
+
+    // Idempotency: skip se già decrementato da un altro flusso
+    $checkStmt = $pdo->prepare("SELECT stock_deducted_at FROM orders WHERE id = :id LIMIT 1");
+    $checkStmt->execute(['id' => $orderId]);
+    $orderRow = $checkStmt->fetch();
+    if (!$orderRow) {
+        $results['warnings'][] = "Ordine #{$orderId} non trovato";
+        return $results;
+    }
+    if (!empty($orderRow['stock_deducted_at'])) {
+        $results['skipped'] = true;
+        error_log("[Stock] ⏭ Ordine #{$orderId} già decrementato il {$orderRow['stock_deducted_at']} - skip");
+        return $results;
+    }
 
     // Fetch order items
     $stmt = $pdo->prepare("
@@ -102,6 +122,15 @@ function deductOrderStock($pdo, $orderId) {
             $results['warnings'][] = "Errore deduzione stock per {$item['product_code']}: " . $e->getMessage();
             error_log("[Stock] ❌ Errore deduzione {$item['product_code']}: " . $e->getMessage());
         }
+    }
+
+    // Marca ordine come decrementato — guard race condition con WHERE IS NULL
+    if ($results['deducted'] > 0) {
+        $markStmt = $pdo->prepare("
+            UPDATE orders SET stock_deducted_at = NOW(3)
+            WHERE id = :id AND stock_deducted_at IS NULL
+        ");
+        $markStmt->execute(['id' => $orderId]);
     }
 
     return $results;

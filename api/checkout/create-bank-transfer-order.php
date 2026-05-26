@@ -12,6 +12,8 @@
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../auth/jwt.php';
 require_once __DIR__ . '/order-email.php';
+require_once __DIR__ . '/stock-helpers.php';
+require_once __DIR__ . '/../lib/mazgest-sync.php';
 
 // Handle OPTIONS preflight
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -36,6 +38,12 @@ $billingAddress = $body['billingAddress'] ?? null;
 $requiresInvoice = (bool)($body['requiresInvoice'] ?? false);
 $invoiceData = $body['invoiceData'] ?? null;
 $notes = trim($body['notes'] ?? '');
+// Coupon code applicato (validato server-side)
+// Accetta sia camelCase (couponCode dal frontend) che snake_case (coupon_code legacy)
+$couponCodeRaw = $body['couponCode'] ?? $body['coupon_code'] ?? null;
+$couponCode = !empty($couponCodeRaw) ? strtoupper(trim($couponCodeRaw)) : null;
+// Consenso marketing per sync verso Brevo (default false se non passato)
+$marketingConsent = (bool)($body['marketingConsent'] ?? false);
 
 // Validazione items
 if (empty($items) || !is_array($items)) {
@@ -181,10 +189,89 @@ try {
 
     $subtotal = round($subtotal, 2);
     $shippingTotal = $subtotal >= FREE_SHIPPING_THRESHOLD ? 0.00 : SHIPPING_COST;
-    $totalBeforeTax = $subtotal + $shippingTotal;
-    $taxTotal = round($totalBeforeTax * 22 / 122, 2);
+
+    // =====================================================
+    // VALIDAZIONE E APPLICAZIONE COUPON CODE
+    // =====================================================
+    // Se l'utente fornisce un couponCode ma è invalido, blocchiamo l'ordine con errore esplicito.
+    // Senza questa logica il sistema applicherebbe €0 di sconto silenziosamente facendo pagare
+    // al cliente il prezzo pieno senza che lui se ne accorga (UX rotta).
     $discountTotal = 0.00;
-    $total = round($subtotal + $shippingTotal, 2);
+    $couponPromotionId = null;
+    $couponAppliedCode = null;
+    $couponError = null; // Se != null e couponCode fornito, blocchiamo con 400
+
+    if ($couponCode) {
+        $stmt = $pdo->prepare("
+            SELECT id, name, type, discount_type, discount_value,
+                   coupon_code, max_uses, max_uses_per_user, times_used,
+                   starts_at, ends_at, is_active
+            FROM promotions
+            WHERE coupon_code = :code AND is_active = 1
+            LIMIT 1
+        ");
+        $stmt->execute(['code' => $couponCode]);
+        $promo = $stmt->fetch();
+
+        $now = date('Y-m-d H:i:s');
+
+        if (!$promo) {
+            $couponError = "Il codice sconto '{$couponCode}' non è valido o è stato disattivato";
+        } elseif ($promo['starts_at'] > $now || $promo['ends_at'] < $now) {
+            $couponError = "Il codice sconto '{$couponCode}' è scaduto o non ancora valido";
+        } elseif ($promo['max_uses'] !== null && (int)$promo['times_used'] >= (int)$promo['max_uses']) {
+            $couponError = "Il codice sconto '{$couponCode}' ha raggiunto il limite massimo di utilizzi";
+        } else {
+            // Verifica max_uses_per_user (basato su email cliente)
+            $perUserLimit = (int)($promo['max_uses_per_user'] ?? 0);
+            if ($perUserLimit > 0) {
+                $stmt = $pdo->prepare("
+                    SELECT COUNT(*) as used_count
+                    FROM orders
+                    WHERE customer_email = :email
+                      AND customer_notes LIKE :coupon_marker
+                      AND status NOT IN ('cancelled', 'refunded')
+                ");
+                $stmt->execute([
+                    'email' => strtolower($customer['email']),
+                    'coupon_marker' => '[COUPON:' . $couponCode . ']%',
+                ]);
+                $usedByUser = (int)$stmt->fetch()['used_count'];
+                if ($usedByUser >= $perUserLimit) {
+                    $couponError = "Hai già usato il codice '{$couponCode}'. Questo codice è valido una sola volta per cliente";
+                }
+            }
+
+            if (!$couponError) {
+                if ($promo['discount_type'] === 'percentage') {
+                    $discountTotal = round($subtotal * ((float)$promo['discount_value']) / 100, 2);
+                } else { // fixed_amount
+                    $discountTotal = min(round((float)$promo['discount_value'], 2), $subtotal);
+                }
+                if ($discountTotal > $subtotal) {
+                    $discountTotal = $subtotal;
+                }
+                $couponPromotionId = (int)$promo['id'];
+                $couponAppliedCode = $couponCode;
+                error_log("[BankTransfer] ✅ Coupon '{$couponCode}' applicato: -€{$discountTotal} (subtotal €{$subtotal})");
+            }
+        }
+
+        // Se c'è errore sul coupon: blocca con 400 STRUTTURATO (frontend mostrerà alert)
+        if ($couponError) {
+            error_log("[BankTransfer] ❌ Coupon '{$couponCode}' rifiutato: {$couponError}");
+            jsonResponse([
+                'success' => false,
+                'error' => $couponError,
+                'couponInvalid' => true,
+                'couponCode' => $couponCode,
+            ], 400);
+        }
+    }
+
+    $total = round($subtotal + $shippingTotal - $discountTotal, 2);
+    if ($total < 0) $total = 0.00;
+    $taxTotal = round($total * 22 / 122, 2);
 
     // =====================================================
     // GENERA NUMERO ORDINE
@@ -216,6 +303,68 @@ try {
             $customerId = (int)$dbCustomer['id'];
             $isGuest = false;
         }
+    }
+
+    // Guest checkout: cerca o crea customer record (senza password) per consolidare anagrafica
+    // così abbiamo storico ordini per email + sync verso MazGest anche per non registrati
+    if (!$customerId) {
+        $emailLower = strtolower(trim($customer['email']));
+        $stmt = $pdo->prepare("SELECT id FROM customers WHERE email = :email LIMIT 1");
+        $stmt->execute(['email' => $emailLower]);
+        $existingByEmail = $stmt->fetch();
+
+        if ($existingByEmail) {
+            // Customer già esiste con questa email (es. iscritto newsletter o guest precedente)
+            $customerId = (int)$existingByEmail['id'];
+        } else {
+            // Crea nuovo customer SENZA password (potential customer)
+            $nameParts = explode(' ', trim($customer['name']), 2);
+            $firstName = $nameParts[0] ?? null;
+            $lastName = $nameParts[1] ?? null;
+
+            $createStmt = $pdo->prepare("
+                INSERT INTO customers (
+                    email, first_name, last_name, phone,
+                    billing_address, billing_city, billing_province, billing_postcode, billing_country,
+                    shipping_address, shipping_city, shipping_province, shipping_postcode, shipping_country,
+                    password, email_verified, from_website,
+                    privacy_consent, privacy_consent_at,
+                    marketing_consent, consented_at,
+                    auth_provider, sync_status,
+                    created_at, updated_at
+                ) VALUES (
+                    :email, :first_name, :last_name, :phone,
+                    :b_address, :b_city, :b_province, :b_postcode, :b_country,
+                    :s_address, :s_city, :s_province, :s_postcode, :s_country,
+                    NULL, 0, 1,
+                    1, NOW(3),
+                    :marketing_consent, :consented_at,
+                    'email', 'pending',
+                    NOW(3), NOW(3)
+                )
+            ");
+            $createStmt->execute([
+                'email' => $emailLower,
+                'first_name' => $firstName,
+                'last_name' => $lastName,
+                'phone' => $customer['phone'] ?? null,
+                'b_address' => $billingAddress['address'] ?? null,
+                'b_city' => $billingAddress['city'] ?? null,
+                'b_province' => $billingAddress['province'] ?? null,
+                'b_postcode' => $billingAddress['postalCode'] ?? null,
+                'b_country' => substr($billingAddress['country'] ?? 'IT', 0, 2),
+                's_address' => $shippingAddress['address'] ?? null,
+                's_city' => $shippingAddress['city'] ?? null,
+                's_province' => $shippingAddress['province'] ?? null,
+                's_postcode' => $shippingAddress['postalCode'] ?? null,
+                's_country' => substr($shippingAddress['country'] ?? 'IT', 0, 2),
+                'marketing_consent' => $marketingConsent ? 1 : 0,
+                'consented_at' => $marketingConsent ? date('Y-m-d H:i:s.u') : null,
+            ]);
+            $customerId = (int)$pdo->lastInsertId();
+            error_log("[BankTransfer] ✨ Creato customer guest #{$customerId} per email {$emailLower}");
+        }
+        // is_guest resta true per questo ordine (cliente senza password)
     }
 
     // =====================================================
@@ -273,7 +422,10 @@ try {
             'payment_method' => 'bank_transfer',
             'payment_id' => 'BT-' . $orderNumber, // Reference for bank transfer
             'shipping_method' => $shippingTotal > 0 ? 'standard' : 'gratuita',
-            'customer_notes' => $notes ?: null,
+            // Prefisso coupon nelle note per tracciabilità (no schema change necessario)
+            'customer_notes' => $couponAppliedCode
+                ? '[COUPON:' . $couponAppliedCode . '] ' . ($notes ?: '')
+                : ($notes ?: null),
         ]);
 
         $orderId = (int)$pdo->lastInsertId();
@@ -307,6 +459,12 @@ try {
             ]);
         }
 
+        // Incrementa times_used del coupon (dentro la stessa transazione per consistency)
+        if ($couponPromotionId) {
+            $stmt = $pdo->prepare("UPDATE promotions SET times_used = times_used + 1 WHERE id = :id");
+            $stmt->execute(['id' => $couponPromotionId]);
+        }
+
         $pdo->commit();
 
     } catch (Exception $e) {
@@ -317,6 +475,36 @@ try {
             'error' => 'Errore nella creazione dell\'ordine',
             'detail' => IS_LOCAL ? $e->getMessage() : null
         ], 500);
+    }
+
+    // =====================================================
+    // DECREMENTO STOCK (PRENOTAZIONE)
+    // =====================================================
+    // Per il bonifico decrementiamo subito al checkout per "prenotare" lo stock,
+    // altrimenti il prodotto resterebbe acquistabile da altri clienti per ore/giorni
+    // mentre attendiamo l'arrivo del bonifico in banca. La funzione è idempotente:
+    // quando MazGest poi chiamerà update-order-status.php con paymentStatus=paid,
+    // il campo orders.stock_deducted_at impedirà un secondo decremento.
+    try {
+        $stockResult = deductOrderStock($pdo, $orderId);
+        error_log("[BankTransfer] Stock decrementato per ordine {$orderNumber}: " .
+            "{$stockResult['deducted']} articoli" .
+            ($stockResult['skipped'] ? ' (skipped: già decrementato)' : ''));
+    } catch (Exception $stockErr) {
+        error_log("[BankTransfer] ⚠️ Errore decremento stock (non bloccante): " . $stockErr->getMessage());
+    }
+
+    // =====================================================
+    // SYNC CUSTOMER VERSO MAZGEST (anche per guest)
+    // =====================================================
+
+    if ($customerId) {
+        try {
+            $syncOk = syncCustomerToMazGest($customerId);
+            error_log("[BankTransfer] MazGest sync customer #{$customerId}: " . ($syncOk ? 'OK' : 'FAILED'));
+        } catch (Exception $syncErr) {
+            error_log("[BankTransfer] ⚠️ Errore sync MazGest (non bloccante): " . $syncErr->getMessage());
+        }
     }
 
     // =====================================================

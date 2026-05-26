@@ -124,6 +124,7 @@ CREATE TABLE IF NOT EXISTS orders (
     notes TEXT NULL,
     mazgest_synced TINYINT(1) DEFAULT 0,
     mazgest_synced_at DATETIME NULL,
+    stock_deducted_at DATETIME(3) NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL,

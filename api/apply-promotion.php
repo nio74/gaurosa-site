@@ -25,6 +25,7 @@
  */
 
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/auth/jwt.php';
 
 // CORS
 header('Access-Control-Allow-Origin: *');
@@ -242,24 +243,61 @@ if ($couponCode !== '') {
         if ($couponPromo['max_uses'] !== null && (int)$couponPromo['times_used'] >= (int)$couponPromo['max_uses']) {
             $couponError = 'Questo coupon ha raggiunto il limite massimo di utilizzi';
         } else {
-            // Calcola sconto coupon
-            if ($couponPromo['discount_type'] === 'percentage') {
-                $couponDiscount = round($subtotal * ((float)$couponPromo['discount_value'] / 100), 2);
-            } else {
-                $couponDiscount = min((float)$couponPromo['discount_value'], $subtotal);
+            // Verifica max_uses_per_user (solo se possiamo identificare l'utente).
+            // Se l'utente è loggato → check via JWT email. Se è guest senza email →
+            // skip qui, il check definitivo verrà fatto al checkout dove l'email è obbligatoria.
+            $perUserLimit = (int)($couponPromo['max_uses_per_user'] ?? 0);
+            $userBlocked = false;
+            if ($perUserLimit > 0) {
+                $authUser = getAuthUser();
+                $userEmail = null;
+                if ($authUser && !empty($authUser['email'])) {
+                    $userEmail = strtolower($authUser['email']);
+                } elseif (!empty($body['customer_email']) && filter_var($body['customer_email'], FILTER_VALIDATE_EMAIL)) {
+                    // Permette al frontend di passare l'email anche senza login (guest)
+                    $userEmail = strtolower(trim($body['customer_email']));
+                }
+
+                if ($userEmail) {
+                    $stmt = $pdo->prepare("
+                        SELECT COUNT(*) AS used_count
+                        FROM orders
+                        WHERE customer_email = :email
+                          AND customer_notes LIKE :coupon_marker
+                          AND status NOT IN ('cancelled', 'refunded')
+                    ");
+                    $stmt->execute([
+                        'email' => $userEmail,
+                        'coupon_marker' => '[COUPON:' . $couponCode . ']%',
+                    ]);
+                    $usedByUser = (int)$stmt->fetch()['used_count'];
+                    if ($usedByUser >= $perUserLimit) {
+                        $couponError = "Hai già usato il codice '{$couponCode}'. È valido una sola volta per cliente";
+                        $userBlocked = true;
+                    }
+                }
             }
 
-            $couponValid = true;
-            $appliedPromotions[] = [
-                'id'       => $couponPromo['id'],
-                'name'     => $couponPromo['name'],
-                'type'     => 'coupon',
-                'badge'    => $couponPromo['promo_badge'],
-                'message'  => $couponPromo['promo_message'],
-                'discount' => $couponDiscount,
-                'coupon_code' => $couponCode,
-            ];
-            $totalDiscount += $couponDiscount;
+            if (!$userBlocked) {
+                // Calcola sconto coupon
+                if ($couponPromo['discount_type'] === 'percentage') {
+                    $couponDiscount = round($subtotal * ((float)$couponPromo['discount_value'] / 100), 2);
+                } else {
+                    $couponDiscount = min((float)$couponPromo['discount_value'], $subtotal);
+                }
+
+                $couponValid = true;
+                $appliedPromotions[] = [
+                    'id'       => $couponPromo['id'],
+                    'name'     => $couponPromo['name'],
+                    'type'     => 'coupon',
+                    'badge'    => $couponPromo['promo_badge'],
+                    'message'  => $couponPromo['promo_message'],
+                    'discount' => $couponDiscount,
+                    'coupon_code' => $couponCode,
+                ];
+                $totalDiscount += $couponDiscount;
+            }
         }
     }
 }

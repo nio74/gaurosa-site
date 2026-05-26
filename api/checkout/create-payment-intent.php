@@ -208,7 +208,8 @@ try {
     // =====================================================
     // VALIDAZIONE COUPON SERVER-SIDE
     // =====================================================
-    $couponCode = strtoupper(trim($body['coupon_code'] ?? ''));
+    // Accetta sia camelCase (couponCode dal frontend nuovo) che snake_case (coupon_code legacy)
+    $couponCode = strtoupper(trim($body['couponCode'] ?? $body['coupon_code'] ?? ''));
     $discountTotal = 0.00;
     $appliedCouponId = null;
 
@@ -227,12 +228,47 @@ try {
         $couponPromo = $stmt->fetch();
 
         if (!$couponPromo) {
-            jsonResponse(['success' => false, 'error' => 'Codice coupon non valido o scaduto'], 400);
+            jsonResponse([
+                'success' => false,
+                'error' => "Il codice sconto '{$couponCode}' non è valido o è scaduto",
+                'couponInvalid' => true,
+                'couponCode' => $couponCode,
+            ], 400);
         }
 
         // Verifica limite utilizzi totali
         if ($couponPromo['max_uses'] !== null && (int)$couponPromo['times_used'] >= (int)$couponPromo['max_uses']) {
-            jsonResponse(['success' => false, 'error' => 'Questo coupon ha raggiunto il limite massimo di utilizzi'], 400);
+            jsonResponse([
+                'success' => false,
+                'error' => "Il codice sconto '{$couponCode}' ha raggiunto il limite massimo di utilizzi",
+                'couponInvalid' => true,
+                'couponCode' => $couponCode,
+            ], 400);
+        }
+
+        // Verifica max_uses_per_user (basato su email cliente)
+        $perUserLimit = (int)($couponPromo['max_uses_per_user'] ?? 0);
+        if ($perUserLimit > 0 && !empty($customer['email'])) {
+            $stmt = $pdo->prepare("
+                SELECT COUNT(*) AS used_count
+                FROM orders
+                WHERE customer_email = :email
+                  AND customer_notes LIKE :coupon_marker
+                  AND status NOT IN ('cancelled', 'refunded')
+            ");
+            $stmt->execute([
+                'email' => strtolower($customer['email']),
+                'coupon_marker' => '[COUPON:' . $couponCode . ']%',
+            ]);
+            $usedByUser = (int)$stmt->fetch()['used_count'];
+            if ($usedByUser >= $perUserLimit) {
+                jsonResponse([
+                    'success' => false,
+                    'error' => "Hai già usato il codice '{$couponCode}'. È valido una sola volta per cliente",
+                    'couponInvalid' => true,
+                    'couponCode' => $couponCode,
+                ], 400);
+            }
         }
 
         // Calcola sconto coupon

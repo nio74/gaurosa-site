@@ -6,7 +6,9 @@ import { Loader2 } from 'lucide-react';
 // API base URL for PHP auth endpoints
 // In dev: Next.js proxy rewrites /api/* -> http://localhost/gaurosa-site/api/*
 // In prod: .htaccess routes /api/* to PHP files directly
-const AUTH_API_BASE = '/api/api/auth';
+// NOTA: usato `/api/auth` (NON `/api/api/auth`). La cartella `api/api/` è un duplicato
+// con config sperimentale che usa SSH tunnel verso DB produzione (gestione futura da pulire).
+const AUTH_API_BASE = '/api/auth';
 
 // Google Client ID from env
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '';
