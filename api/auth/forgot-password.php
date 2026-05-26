@@ -75,7 +75,7 @@ try {
     ]);
 
     // Costruisci link reset
-    $resetUrl = SITE_URL . '/account/reset-password/' . $token . '/';
+    $resetUrl = SITE_URL . '/account/reset-password/?token=' . $token;
 
     // In dev: logga il link, in prod: invia email
     if (IS_LOCAL) {

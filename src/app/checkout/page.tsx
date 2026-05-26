@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -257,7 +257,7 @@ function PayPalStep({ orderId, paypalOrderId, onSuccess, onError }: PayPalStepPr
   );
 }
 
-export default function CheckoutPage() {
+function CheckoutInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { cart, isLoaded, clearCart } = useCart();
@@ -1603,5 +1603,17 @@ export default function CheckoutPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-brand-rose" />
+      </div>
+    }>
+      <CheckoutInner />
+    </Suspense>
   );
 }
