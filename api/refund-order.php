@@ -1,6 +1,8 @@
 <?php
 /**
- * Endpoint rimborso ordine (chiamato da MazGest)
+ * Endpoint rimborso ordine AUTOMATICO (Stripe/Klarna o PayPal)
+ *
+ * Chiamato da MazGest quando l'operatore preme "Rimborsa" sul drawer ordini.
  *
  * POST /api/refund-order.php
  * Body JSON:
@@ -10,19 +12,62 @@
  *     "reason": "requested_by_customer" (opzionale)
  *   }
  *
- * Flow:
- * 1. Legge ordine da DB (no test mode: solo paid)
- * 2. Chiama Stripe POST /v1/refunds con payment_intent
- * 3. Aggiorna ordine status='cancelled', payment_status='refunded'
- * 4. Restore stock per ogni item dell'ordine (riavvia stock_helpers se serve)
- * 5. Idempotente: se gia' refunded, ritorna successo con flag already_refunded
+ * Flow (in base a payment_method):
  *
- * NB: il webhook Stripe charge.refunded arrivera' subito dopo come backup;
- *     viene gestito con check idempotenza (skip se gia' refunded).
+ *   STRIPE / CARD / KLARNA:
+ *     1. Idempotency check
+ *     2. POST Stripe /v1/refunds con payment_intent (orders.payment_id)
+ *     3. Update DB (refunded/cancelled, note) + restore stock
+ *     4. Webhook Stripe charge.refunded arriva come backup (idempotent skip)
+ *
+ *   PAYPAL:
+ *     1. Idempotency check
+ *     2. OAuth2: POST /v1/oauth2/token (client_credentials) -> access_token
+ *     3. POST PayPal /v2/payments/captures/{capture_id}/refund con Bearer
+ *        (capture_id = orders.payment_reference, NON payment_id!)
+ *     4. Update DB + restore stock
+ *     5. No webhook PayPal -> questa chiamata e' l'unica fonte di verita'
+ *
+ * Per metodi non gestiti (bonifico, ecc.) usare refund-order-manual.php.
  */
 
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/checkout/stock-helpers.php';
+
+/**
+ * Ottiene access_token PayPal via OAuth2 client_credentials.
+ * Stessa logica gia' presente in checkout/capture-paypal-order.php
+ * (duplicata qui per mantenere il file autonomo - se in futuro si vuole
+ * un singolo helper estrarre in api/lib/paypal-helpers.php).
+ *
+ * @return string|null access_token oppure null se errore
+ */
+function refundGetPayPalAccessToken(): ?string {
+    $ch = curl_init(PAYPAL_API_URL . '/v1/oauth2/token');
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => 'grant_type=client_credentials',
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_USERPWD => PAYPAL_CLIENT_ID . ':' . PAYPAL_SECRET,
+        CURLOPT_HTTPHEADER => [
+            'Content-Type: application/x-www-form-urlencoded',
+        ],
+        CURLOPT_TIMEOUT => 15,
+    ]);
+
+    $response = curl_exec($ch);
+    $curlError = curl_error($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($curlError || $httpCode !== 200) {
+        error_log("[Refund-PayPal] OAuth error ({$httpCode}): {$curlError} - Response: {$response}");
+        return null;
+    }
+
+    $data = json_decode($response, true);
+    return $data['access_token'] ?? null;
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     jsonResponse(['success' => true]);
@@ -51,9 +96,9 @@ if ($externalOrderNumber === '') {
 
 $pdo = getDbConnection();
 
-// 1. Recupera ordine
+// 1. Recupera ordine (include payment_reference per PayPal capture_id)
 $stmt = $pdo->prepare("
-    SELECT id, order_number, payment_id, payment_method, payment_status, status, total,
+    SELECT id, order_number, payment_id, payment_reference, payment_method, payment_status, status, total,
            customer_email, customer_name
     FROM orders
     WHERE order_number = :on
@@ -85,14 +130,132 @@ if ($order['payment_status'] !== 'paid') {
 }
 
 $paymentMethod = strtolower($order['payment_method'] ?? '');
-if (!in_array($paymentMethod, ['stripe', 'card', 'klarna'])) {
-    // Bonifico/PayPal: per ora non implementati (PayPal sarebbe simile a Stripe)
+$isStripeFlow = in_array($paymentMethod, ['stripe', 'card', 'klarna']);
+$isPayPalFlow = ($paymentMethod === 'paypal');
+
+if (!$isStripeFlow && !$isPayPalFlow) {
+    // Bonifico/altri: usa refund-order-manual.php
     jsonResponse([
         'success' => false,
-        'error' => "Rimborso automatico non supportato per metodo '{$paymentMethod}'. Procedere manualmente.",
+        'error' => "Rimborso automatico non supportato per metodo '{$paymentMethod}'. Usa refund-order-manual.php.",
     ], 400);
 }
 
+// ============================================================================
+// FLOW PAYPAL
+// ============================================================================
+if ($isPayPalFlow) {
+    // Il capture_id e' salvato in payment_reference, NON in payment_id
+    // (vedi capture-paypal-order.php lines 138-156: extract da
+    //  purchase_units[0].payments.captures[0].id)
+    $captureId = trim($order['payment_reference'] ?? '');
+    if (empty($captureId)) {
+        jsonResponse([
+            'success' => false,
+            'error' => 'capture_id PayPal (payment_reference) mancante sull ordine. Procedere manualmente da pannello PayPal.',
+        ], 500);
+    }
+
+    // 4a. OAuth2: ottieni access_token
+    $accessToken = refundGetPayPalAccessToken();
+    if (!$accessToken) {
+        jsonResponse([
+            'success' => false,
+            'error' => 'Errore autenticazione PayPal (OAuth2 fallito)',
+        ], 502);
+    }
+
+    // 4b. Chiama PayPal refund API
+    $refundUrl = PAYPAL_API_URL . "/v2/payments/captures/{$captureId}/refund";
+    // Body vuoto = refund TOTALE. Per parziale: {"amount":{"value":"X.XX","currency_code":"EUR"}}
+    $refundBody = json_encode([
+        'note_to_payer' => 'Rimborso ordine ' . $order['order_number'],
+        'invoice_id' => $order['order_number'],
+    ]);
+
+    $ch = curl_init($refundUrl);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => $refundBody,
+        CURLOPT_HTTPHEADER => [
+            'Authorization: Bearer ' . $accessToken,
+            'Content-Type: application/json',
+            'Prefer: return=representation',
+        ],
+        CURLOPT_TIMEOUT => 30,
+    ]);
+
+    $paypalResponse = curl_exec($ch);
+    $curlError = curl_error($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($curlError) {
+        error_log("[Refund-PayPal] cURL error: {$curlError}");
+        jsonResponse(['success' => false, 'error' => 'Errore connessione PayPal'], 502);
+    }
+
+    $paypalData = json_decode($paypalResponse, true);
+
+    // PayPal restituisce 201 in caso di successo (non 200 come Stripe)
+    if ($httpCode !== 200 && $httpCode !== 201) {
+        $paypalError = $paypalData['message'] ?? ($paypalData['name'] ?? 'Errore sconosciuto');
+        $paypalDetails = isset($paypalData['details'][0]['description'])
+            ? ' - ' . $paypalData['details'][0]['description']
+            : '';
+        error_log("[Refund-PayPal] HTTP {$httpCode}: {$paypalError}{$paypalDetails} - " . json_encode($paypalData));
+        jsonResponse([
+            'success' => false,
+            'error' => "PayPal: {$paypalError}{$paypalDetails}",
+            'detail' => IS_LOCAL ? $paypalData : null,
+        ], 502);
+    }
+
+    $refundId = $paypalData['id'] ?? null;
+    $refundStatus = $paypalData['status'] ?? 'unknown';
+    $amountRefunded = isset($paypalData['amount']['value'])
+        ? (float)$paypalData['amount']['value']
+        : (float)$order['total'];
+    error_log("[Refund-PayPal] OK: {$refundId} status={$refundStatus} per ordine {$order['order_number']} - {$amountRefunded} EUR");
+
+    // 5a. Aggiorna ordine
+    $noteTimestamp = date('Y-m-d H:i:s');
+    $noteText = "\n[Rimborso " . $noteTimestamp . " da MazGest] PayPal refund {$refundId} (status: {$refundStatus}) - {$amountRefunded} EUR";
+
+    $pdo->prepare("
+        UPDATE orders
+        SET payment_status = 'refunded',
+            status = 'cancelled',
+            internal_notes = CONCAT(COALESCE(internal_notes, ''), :note),
+            updated_at = NOW(3)
+        WHERE id = :id
+    ")->execute([
+        'id' => $order['id'],
+        'note' => $noteText,
+    ]);
+
+    // 6a. Restore stock
+    try {
+        $restored = restoreOrderStock($pdo, (int)$order['id']);
+        error_log("[Refund-PayPal] Stock ripristinato per ordine #{$order['id']}: {$restored['restored']} righe");
+    } catch (Exception $stockErr) {
+        error_log("[Refund-PayPal] Errore restore stock ordine #{$order['id']}: " . $stockErr->getMessage());
+    }
+
+    jsonResponse([
+        'success' => true,
+        'order_number' => $order['order_number'],
+        'paypal_refund_id' => $refundId,
+        'paypal_refund_status' => $refundStatus,
+        'amount_refunded_eur' => $amountRefunded,
+        'message' => 'Ordine rimborsato via PayPal',
+    ]);
+}
+
+// ============================================================================
+// FLOW STRIPE / CARD / KLARNA
+// ============================================================================
 if (empty($order['payment_id'])) {
     jsonResponse(['success' => false, 'error' => 'payment_id mancante sull ordine'], 500);
 }
