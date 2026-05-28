@@ -30,6 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             LEFT JOIN products p ON pc.product_id = p.id AND p.is_active = 1 AND p.stock > 0
             WHERE c.is_active = 1
             GROUP BY c.id
+            HAVING product_count > 0
             ORDER BY c.position ASC, c.name ASC
         ";
         

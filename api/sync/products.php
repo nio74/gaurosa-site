@@ -383,6 +383,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
 
+            // Sync collezione: il payload puo' contenere collection = { id, code, name, ... }
+            // dove "id" e' il mazgest_id della collezione. Cerco il record locale e creo
+            // il link in product_collections. Reset always per gestire cambio collezione.
+            $pdo->prepare("DELETE FROM product_collections WHERE product_id = ?")->execute([$productId]);
+            if (!empty($product['collection']) && !empty($product['collection']['id'])) {
+                $mazgestCollId = (int)$product['collection']['id'];
+                $cstmt = $pdo->prepare("SELECT id FROM collections WHERE mazgest_id = :mid LIMIT 1");
+                $cstmt->execute(['mid' => $mazgestCollId]);
+                $coll = $cstmt->fetch();
+                if ($coll) {
+                    $pdo->prepare("INSERT IGNORE INTO product_collections (product_id, collection_id) VALUES (?, ?)")
+                        ->execute([$productId, (int)$coll['id']]);
+                } else {
+                    error_log("[SyncProducts] Collezione mazgest_id={$mazgestCollId} non trovata in locale per prodotto {$product['code']} - sincronizzare prima le collezioni");
+                }
+            }
+
             $pdo->commit();
             $processed++;
 
