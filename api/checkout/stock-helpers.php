@@ -188,3 +188,68 @@ function deductOrderStock($pdo, $orderId) {
 
     return $results;
 }
+
+/**
+ * Restore stock per un ordine rimborsato/cancellato.
+ * Speculare a deductOrderStock: incrementa stock di prodotti e varianti.
+ *
+ * Idempotente: usa orders.stock_deducted_at - se NULL significa che non era
+ * mai stato dedotto (es. ordine fallito), quindi non c'e' nulla da ripristinare.
+ * Reset stock_deducted_at a NULL dopo restore per permettere future re-deduzioni
+ * (anche se in pratica un ordine refunded non viene piu' processato).
+ */
+function restoreOrderStock(PDO $pdo, int $orderId): array {
+    $results = [
+        'restored' => 0,
+        'skipped' => false,
+        'warnings' => [],
+    ];
+
+    // Verifica se l'ordine ha effettivamente decrementato stock
+    $checkStmt = $pdo->prepare("SELECT stock_deducted_at FROM orders WHERE id = :id LIMIT 1");
+    $checkStmt->execute(['id' => $orderId]);
+    $orderRow = $checkStmt->fetch();
+    if (!$orderRow) {
+        $results['warnings'][] = "Ordine #{$orderId} non trovato";
+        return $results;
+    }
+    if (empty($orderRow['stock_deducted_at'])) {
+        $results['skipped'] = true;
+        error_log("[Stock] Restore skip: ordine #{$orderId} non aveva mai dedotto stock");
+        return $results;
+    }
+
+    $stmt = $pdo->prepare("
+        SELECT oi.id, oi.product_id, oi.product_code, oi.variant_sku, oi.quantity
+        FROM order_items oi
+        WHERE oi.order_id = :order_id
+    ");
+    $stmt->execute(['order_id' => $orderId]);
+    $items = $stmt->fetchAll();
+
+    foreach ($items as $item) {
+        $productId = (int)$item['product_id'];
+        $variantSku = $item['variant_sku'];
+        $qty = (int)$item['quantity'];
+
+        try {
+            if ($variantSku) {
+                $pdo->prepare("UPDATE product_variants SET stock = stock + :qty WHERE product_id = :pid AND sku = :sku")
+                    ->execute(['qty' => $qty, 'pid' => $productId, 'sku' => $variantSku]);
+            }
+            $pdo->prepare("UPDATE products SET stock = stock + :qty, updated_at = NOW(3) WHERE id = :id")
+                ->execute(['qty' => $qty, 'id' => $productId]);
+
+            $results['restored']++;
+            error_log("[Stock] Restored {$qty}x {$item['product_code']}" . ($variantSku ? " ({$variantSku})" : ""));
+        } catch (Exception $e) {
+            $results['warnings'][] = "Errore restore {$item['product_code']}: " . $e->getMessage();
+        }
+    }
+
+    // Reset flag stock_deducted_at: l'ordine non ha piu' stock dedotto
+    $pdo->prepare("UPDATE orders SET stock_deducted_at = NULL WHERE id = :id")
+        ->execute(['id' => $orderId]);
+
+    return $results;
+}
