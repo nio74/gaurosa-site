@@ -18,6 +18,7 @@ require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../auth/jwt.php';
 require_once __DIR__ . '/order-email.php';
 require_once __DIR__ . '/stock-helpers.php';
+require_once __DIR__ . '/../lib/mazgest-sync.php';
 
 // Handle OPTIONS preflight
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -51,9 +52,10 @@ try {
 
     $stmt = $pdo->prepare("
         SELECT id, order_number, payment_id, payment_status, status, total,
-               customer_email, customer_name
-        FROM orders 
-        WHERE id = :id 
+               customer_id, customer_email, customer_name, customer_phone,
+               billing_address, shipping_address
+        FROM orders
+        WHERE id = :id
         LIMIT 1
     ");
     $stmt->execute(['id' => $orderId]);
@@ -164,6 +166,24 @@ try {
             error_log("[CapturePayPal] Stock dedotto per ordine #{$orderId}: {$stockResult['deducted']} articoli");
         } catch (Exception $stockError) {
             error_log("[CapturePayPal] ⚠️ Errore deduzione stock (non bloccante): " . $stockError->getMessage());
+        }
+
+        // =====================================================
+        // FIND-OR-CREATE CUSTOMER + SYNC MAZGEST
+        // (stesso pattern di bank_transfer / Stripe confirm-order)
+        // =====================================================
+        try {
+            $customerId = ensureCustomerForOrder($pdo, $order);
+            if ($customerId) {
+                $updCustStmt = $pdo->prepare("UPDATE orders SET customer_id = :cid, updated_at = NOW(3) WHERE id = :id");
+                $updCustStmt->execute(['cid' => $customerId, 'id' => $orderId]);
+                error_log("[CapturePayPal] customer_id #{$customerId} associato all'ordine #{$orderId}");
+
+                $syncOk = syncCustomerToMazGest($customerId);
+                error_log("[CapturePayPal] MazGest sync customer #{$customerId}: " . ($syncOk ? 'OK' : 'FAILED'));
+            }
+        } catch (Exception $custErr) {
+            error_log("[CapturePayPal] ⚠️ Errore create/sync customer (non bloccante): " . $custErr->getMessage());
         }
 
         // Send order confirmation email (non-blocking)

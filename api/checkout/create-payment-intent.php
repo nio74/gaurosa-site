@@ -21,6 +21,7 @@
 
 require_once __DIR__ . '/../config.php';
 require_once __DIR__ . '/../auth/jwt.php';
+require_once __DIR__ . '/stock-helpers.php';
 
 // Handle OPTIONS preflight
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -202,6 +203,11 @@ try {
             'totalPrice' => $lineTotal,
         ];
     }
+
+    // Stock check AGGREGATO per prodotto: per varianti virtuali (misure anello) il check
+    // riga-per-riga su variant.stock non e' sufficiente perche' tutte le varianti virtuali
+    // dello stesso prodotto attingono dallo stesso stock fisico (products.stock).
+    validateAggregateProductStock($pdo, $validatedItems);
 
     $subtotal = round($subtotal, 2);
 

@@ -587,7 +587,7 @@ export default function ProductDetailClient({ code: codeProp }: { code: string }
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
                   <p className="font-medium text-gray-900">Spedizione</p>
-                  <p className="text-gray-600">Gratuita sopra 100EUR</p>
+                  <p className="text-gray-600">Gratuita sopra 45€</p>
                 </div>
                 <div>
                   <p className="font-medium text-gray-900">Consegna</p>

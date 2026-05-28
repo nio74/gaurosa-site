@@ -91,9 +91,22 @@ function sendOrderConfirmationEmail($pdo, $orderId) {
 }
 
 /**
- * Invia email generica per ordini
+ * Invia email generica per ordini.
+ *
+ * Comportamento unificato dev/prod:
+ *  - usa mail() di PHP
+ *  - in DEV: php.ini punta a localhost:1025 -> Mailpit cattura tutto (UI: http://localhost:8025)
+ *  - in PROD (Hostinger): mail() usa il sendmail di sistema configurato dall'hosting
+ *
+ * Logging di trace (TO, SUBJECT, lunghezza) lasciato per debug.
  */
 function sendOrderEmail($to, $subject, $htmlBody) {
+    // Robustezza: in dev se Mailpit non risponde il timeout di mail() puo' bloccare
+    // la response del checkout (~8s) facendo abortire il client browser con
+    // "Errore di rete". Riduco il timeout socket a 1s cosi' la connessione fallisce
+    // velocemente e l'ordine viene comunque registrato.
+    @ini_set('default_socket_timeout', '1');
+
     $headers = [
         'MIME-Version: 1.0',
         'Content-type: text/html; charset=UTF-8',
@@ -102,19 +115,13 @@ function sendOrderEmail($to, $subject, $htmlBody) {
         'X-Mailer: PHP/' . phpversion()
     ];
 
-    $isLocal = strpos($_SERVER['HTTP_HOST'] ?? 'localhost', 'localhost') !== false;
+    error_log("[OrderEmail] 📧 [" . gaurosaEnv() . "] TO: {$to} | SUBJECT: {$subject} | BODY: " . strlen($htmlBody) . " chars");
 
-    if ($isLocal) {
-        // In locale, logga invece di inviare
-        error_log("[OrderEmail] 📧 EMAIL TO: {$to}");
-        error_log("[OrderEmail] 📧 SUBJECT: {$subject}");
-        error_log("[OrderEmail] 📧 BODY LENGTH: " . strlen($htmlBody) . " chars");
-        error_log("[OrderEmail] 📧 (Email non inviata - ambiente locale)");
-        return true; // Simula successo in locale
+    $ok = @mail($to, $subject, $htmlBody, implode("\r\n", $headers));
+    if (!$ok) {
+        error_log("[OrderEmail] ❌ mail() ha restituito false per {$to}");
     }
-
-    // Produzione - usa mail() di PHP (Hostinger lo configura automaticamente)
-    return mail($to, $subject, $htmlBody, implode("\r\n", $headers));
+    return $ok;
 }
 
 /**

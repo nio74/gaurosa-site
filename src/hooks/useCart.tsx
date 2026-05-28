@@ -67,6 +67,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart.items));
   }, [cart.items]);
 
+  // Stock disponibile (single source of truth).
+  // IMPORTANTE: per i prodotti con varianti virtuali (es. anelli) tutte le misure
+  // virtuali attingono dallo stesso stock fisico. Quindi il limite GLOBALE del
+  // prodotto e' product.stock.total (es. M02914 ha 1 anello in tutto), non variant.stock
+  // (che per le virtuali e' un valore informativo gonfiato).
+  //
+  // Regola: somma le quantita' di TUTTE le varianti dello stesso product.code presenti
+  // nel carrello e confronta con product.stock.total.
+  const getProductMaxStock = (product: Product): number => {
+    return Math.max(0, product.stock?.total || 0);
+  };
+
   const addToCart = (product: Product, variant?: ProductVariant, quantity = 1) => {
     // Fire Meta Pixel AddToCart event
     if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
@@ -80,12 +92,51 @@ export function CartProvider({ children }: { children: ReactNode }) {
       });
     }
 
+    const maxStock = getProductMaxStock(product);
+
     setCart((prev) => {
       const existingIndex = prev.items.findIndex(
         (item) =>
           item.product.code === product.code &&
           item.variant?.sku === variant?.sku
       );
+
+      // Quantita' attualmente nel carrello per QUESTA esatta variante (per aggiornare la riga giusta)
+      const currentInCart = existingIndex >= 0 ? prev.items[existingIndex].quantity : 0;
+
+      // Quantita' TOTALE nel carrello per lo stesso PRODOTTO (tutte le varianti).
+      // Per varianti virtuali condividono lo stesso stock pool, quindi sommiamo.
+      const totalInCartForProduct = prev.items
+        .filter((item) => item.product.code === product.code)
+        .reduce((sum, item) => sum + item.quantity, 0);
+      const requestedTotal = totalInCartForProduct + quantity;
+
+      // Blocco overselling: la somma di tutte le varianti dello stesso prodotto
+      // non puo' superare lo stock complessivo del prodotto.
+      if (requestedTotal > maxStock) {
+        if (typeof window !== 'undefined') {
+          const remaining = Math.max(0, maxStock - totalInCartForProduct);
+          if (maxStock === 0) {
+            alert('Prodotto esaurito.');
+          } else if (remaining === 0) {
+            const sizesInCart = prev.items
+              .filter((item) => item.product.code === product.code)
+              .map((item) => item.variant?.size || item.variant?.name || 'unica')
+              .join(', ');
+            alert(`Hai gia' raggiunto la quantita' massima disponibile (${maxStock} pezzi totali tra tutte le misure).\n\nMisure nel carrello: ${sizesInCart}.\n\nSe vuoi una misura diversa, rimuovi prima quella attuale dal carrello.`);
+          } else {
+            alert(`Sono disponibili solo ${maxStock} pezzi totali di questo prodotto.\nNel carrello ne hai gia' ${totalInCartForProduct}, puoi aggiungerne al massimo ${remaining}.`);
+          }
+        }
+        // Cap alla quantita' massima disponibile (basato sullo stock globale del prodotto)
+        const cappedQuantity = Math.max(0, maxStock - totalInCartForProduct);
+        if (cappedQuantity === 0) return prev;
+
+        const newItems: CartItem[] = existingIndex >= 0
+          ? prev.items.map((item, idx) => idx === existingIndex ? { ...item, quantity: item.quantity + cappedQuantity } : item)
+          : [...prev.items, { product, variant, quantity: cappedQuantity }];
+        return { items: newItems, ...calculateTotals(newItems) };
+      }
 
       let newItems: CartItem[];
 
@@ -122,10 +173,42 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
 
     setCart((prev) => {
-      const newItems = prev.items.map((item) =>
-        item.product.code === productCode && item.variant?.sku === variantSku
-          ? { ...item, quantity }
-          : item
+      const item = prev.items.find(
+        (it) => it.product.code === productCode && it.variant?.sku === variantSku
+      );
+      if (!item) return prev;
+
+      // Blocco overselling globale sul prodotto: somma quantita' di TUTTE le varianti
+      // dello stesso prodotto (escludendo quella che stiamo aggiornando) + la nuova quantita'
+      // non puo' superare lo stock complessivo del prodotto.
+      const maxStock = getProductMaxStock(item.product);
+      const totalOthers = prev.items
+        .filter((it) => it.product.code === productCode && it.variant?.sku !== variantSku)
+        .reduce((sum, it) => sum + it.quantity, 0);
+
+      let finalQty = quantity;
+      if (totalOthers + quantity > maxStock) {
+        const allowedForThis = Math.max(0, maxStock - totalOthers);
+        if (typeof window !== 'undefined') {
+          alert(`Stock totale prodotto: ${maxStock} pezzi.\nAltre misure nel carrello: ${totalOthers}.\nPuoi tenerne al massimo ${allowedForThis} di questa misura.`);
+        }
+        finalQty = allowedForThis;
+      }
+      if (finalQty <= 0) {
+        return {
+          items: prev.items.filter(
+            (it) => !(it.product.code === productCode && it.variant?.sku === variantSku)
+          ),
+          ...calculateTotals(prev.items.filter(
+            (it) => !(it.product.code === productCode && it.variant?.sku === variantSku)
+          )),
+        };
+      }
+
+      const newItems = prev.items.map((it) =>
+        it.product.code === productCode && it.variant?.sku === variantSku
+          ? { ...it, quantity: finalQty }
+          : it
       );
       return { items: newItems, ...calculateTotals(newItems) };
     });

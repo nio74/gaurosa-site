@@ -46,6 +46,10 @@ export interface Product {
     available: boolean;
   };
   variants?: ProductVariant[];
+  // Flag leggero ritornato dal listing API per indicare se il prodotto ha varianti
+  // (es. misure) senza dover trasportare l'intero array di varianti nel payload listing.
+  // Sul dettaglio prodotto il campo variants e' invece sempre presente.
+  has_variants?: boolean;
   tags?: ProductTag[];
   attributes?: Record<string, string | number | null>;
 }

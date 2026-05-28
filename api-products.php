@@ -235,7 +235,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                     )
                     ORDER BY pi.is_primary DESC, pi.sort_order ASC
                     SEPARATOR ';;'
-                ) as images_data
+                ) as images_data,
+                (SELECT COUNT(*) FROM product_variants pv WHERE pv.product_id = p.id) AS variant_count
             FROM products p
             LEFT JOIN product_images pi ON p.id = pi.product_id
             LEFT JOIN brands b ON p.brand_id = b.id
@@ -331,6 +332,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
                 'brand' => $product['brand_name'],
                 'slug' => strtolower($product['code']),
                 'images' => $images,
+                // has_variants: il listing non include la lista completa varianti (per peso payload),
+                // ma il frontend ha bisogno di sapere se aprire pagina dettaglio per scegliere misura.
+                'has_variants' => (int)($product['variant_count'] ?? 0) > 0,
                 'createdAt' => $product['created_at'],
                 'updatedAt' => $product['updated_at'],
             ];

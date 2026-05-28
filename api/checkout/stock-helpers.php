@@ -1,11 +1,64 @@
 <?php
 /**
  * Stock deduction helpers for gaurosa.it checkout
- * 
+ *
  * Deducts stock from products/variants after a successful payment.
  * Used by: confirm-order.php (Stripe), capture-paypal-order.php (PayPal),
  *          update-order-status.php (bank transfer confirmation from MazGest)
  */
+
+/**
+ * Validazione stock AGGREGATA per product_id.
+ *
+ * Necessaria per i prodotti con varianti virtuali (es. anelli con misure):
+ * tutte le misure virtuali attingono dallo stesso stock fisico (products.stock),
+ * quindi il check riga-per-riga su variant.stock non basta a prevenire overselling
+ * quando il cliente mette nel carrello piu' misure dello stesso anello.
+ *
+ * Strategia: raggruppa $validatedItems per productId, somma le quantita',
+ * confronta con products.stock (lo stock complessivo del prodotto).
+ *
+ * In caso di overselling, chiama jsonResponse(...) con HTTP 409 e termina.
+ *
+ * @param PDO   $pdo
+ * @param array $validatedItems  Array di item con almeno: productId, productName, quantity
+ */
+function validateAggregateProductStock(PDO $pdo, array $validatedItems): void {
+    // Raggruppa per product_id
+    $byProduct = [];
+    foreach ($validatedItems as $vi) {
+        $pid = (int)$vi['productId'];
+        if (!isset($byProduct[$pid])) {
+            $byProduct[$pid] = [
+                'name' => $vi['productName'] ?? "Prodotto #{$pid}",
+                'quantity' => 0,
+            ];
+        }
+        $byProduct[$pid]['quantity'] += (int)$vi['quantity'];
+    }
+
+    if (empty($byProduct)) return;
+
+    // Una sola query per tutti i product_id coinvolti
+    $ids = array_keys($byProduct);
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+    $stmt = $pdo->prepare("SELECT id, stock FROM products WHERE id IN ($placeholders)");
+    $stmt->execute($ids);
+    $stockMap = [];
+    foreach ($stmt->fetchAll() as $row) {
+        $stockMap[(int)$row['id']] = (int)$row['stock'];
+    }
+
+    foreach ($byProduct as $pid => $data) {
+        $available = $stockMap[$pid] ?? 0;
+        if ($data['quantity'] > $available) {
+            $stockMsg = $available === 0
+                ? "'{$data['name']}' non e' piu' disponibile"
+                : "'{$data['name']}': disponibili solo {$available} pezzi in totale (hai richiesto {$data['quantity']} sommando tutte le misure scelte). Riduci la quantita' o rimuovi alcune misure dal carrello.";
+            jsonResponse(['success' => false, 'error' => $stockMsg], 409);
+        }
+    }
+}
 
 /**
  * Deduct stock for all items in an order.

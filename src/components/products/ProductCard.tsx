@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ShoppingCart, Heart } from 'lucide-react';
+import { ShoppingCart, Heart, Eye } from 'lucide-react';
 import { Product } from '@/types';
 import { formatPrice } from '@/lib/utils';
 import { useCart } from '@/hooks/useCart';
@@ -22,9 +22,22 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
   const imageUrl = primaryImage?.url_thumb || primaryImage?.url || '/images/placeholder-product.jpg';
   const blurDataUrl = primaryImage?.blur_data_uri;
 
+  // Se il prodotto ha varianti (es. anelli con misura), il cliente DEVE poter
+  // scegliere la variante prima di aggiungere al carrello → in quel caso il
+  // pulsante porta alla pagina dettaglio invece di aggiungere direttamente.
+  // L'API listing ritorna solo il flag boolean has_variants per leggerezza,
+  // mentre l'API dettaglio carica l'array variants completo.
+  const hasVariants = (product.variants?.length ?? 0) > 0 || product.has_variants === true;
+
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (hasVariants) {
+      // Lascia che il Link wrapper porti a /prodotti/[code]
+      // (non chiamiamo preventDefault sul Link, quindi navigare)
+      window.location.href = `/prodotti/${product.code}`;
+      return;
+    }
     addToCart(product);
   };
 
@@ -73,8 +86,8 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
               className="flex-1"
               size="sm"
             >
-              <ShoppingCart className="w-4 h-4 mr-2" />
-              Aggiungi
+              {hasVariants ? <Eye className="w-4 h-4 mr-2" /> : <ShoppingCart className="w-4 h-4 mr-2" />}
+              {hasVariants ? 'Vedi' : 'Aggiungi'}
             </Button>
             <Button variant="secondary" size="sm" className="px-3">
               <Heart className="w-4 h-4" />

@@ -187,6 +187,11 @@ try {
         ];
     }
 
+    // Stock check AGGREGATO per prodotto: per varianti virtuali (misure anello) il check
+    // riga-per-riga su variant.stock non e' sufficiente perche' tutte le varianti virtuali
+    // dello stesso prodotto attingono dallo stesso stock fisico (products.stock).
+    validateAggregateProductStock($pdo, $validatedItems);
+
     $subtotal = round($subtotal, 2);
     $shippingTotal = $subtotal >= FREE_SHIPPING_THRESHOLD ? 0.00 : SHIPPING_COST;
 
@@ -557,6 +562,11 @@ try {
 // =====================================================
 
 function sendBankTransferEmail($pdo, $orderId, $orderNumber, $total, $customer) {
+    // Robustezza: in dev se Mailpit non risponde il timeout di mail() puo' bloccare
+    // l'intera response del checkout. Riduco il timeout di connessione socket a 1s
+    // (default 60s) cosi' al massimo si perdono 2 secondi (2 mail × 1s).
+    @ini_set('default_socket_timeout', '1');
+
     $formattedTotal = number_format($total, 2, ',', '.');
     
     $subject = "Ordine {$orderNumber} - Istruzioni per il bonifico bancario";
@@ -609,25 +619,20 @@ function sendBankTransferEmail($pdo, $orderId, $orderNumber, $total, $customer) 
     
     $html .= '</div></body></html>';
     
-    // Send email (uses same logic as order-email.php)
-    if (IS_LOCAL) {
-        error_log("[BankTransfer] 📧 Email bonifico (locale, non inviata): To={$customer['email']}, Subject={$subject}");
-        
-        // Mark as sent in DB
-        $updateStmt = $pdo->prepare("
-            UPDATE orders SET confirmation_email_sent = 1, confirmation_email_sent_at = NOW(3) WHERE id = :id
-        ");
-        $updateStmt->execute(['id' => $orderId]);
-        return;
-    }
-    
-    // Production: send via PHP mail()
+    // Send email via PHP mail()
+    // In dev: php.ini punta a Mailpit (localhost:1025) -> email visibili su http://localhost:8025
+    // In prod (Hostinger): mail() usa il sendmail di sistema
+    error_log("[BankTransfer] 📧 [" . gaurosaEnv() . "] Invio email bonifico To={$customer['email']}, Subject={$subject}");
+
     $headers = "MIME-Version: 1.0\r\n";
     $headers .= "Content-type: text/html; charset=UTF-8\r\n";
     $headers .= "From: " . EMAIL_FROM_NAME . " <" . EMAIL_FROM . ">\r\n";
     $headers .= "Reply-To: info@gaurosa.it\r\n";
-    
-    $sent = mail($customer['email'], $subject, $html, $headers);
+
+    $sent = @mail($customer['email'], $subject, $html, $headers);
+    if (!$sent) {
+        error_log("[BankTransfer] ❌ mail() ha restituito false per {$customer['email']}");
+    }
     
     if ($sent) {
         $updateStmt = $pdo->prepare("

@@ -308,6 +308,15 @@ function CheckoutInner() {
     }
   }, [isLoaded, cart.items.length, router, showPayment, isSubmitting]);
 
+  // Scroll in alto quando entriamo nella fase pagamento: il form lungo viene
+  // smontato e lo step pagamento (Stripe Elements / PayPal) è più corto, quindi
+  // la posizione di scroll precedente lascerebbe il viewport sul footer.
+  useEffect(() => {
+    if (showPayment && typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [showPayment]);
+
   // Fire Meta Pixel InitiateCheckout once when cart is loaded
   useEffect(() => {
     if (!isLoaded || cart.items.length === 0) return;

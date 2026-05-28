@@ -36,7 +36,7 @@ const features = [
   {
     icon: Truck,
     title: 'Spedizione Gratuita',
-    description: 'Su tutti gli ordini sopra i 100€',
+    description: 'Su tutti gli ordini sopra i 45€',
   },
   {
     icon: Shield,

@@ -3,6 +3,9 @@
  * Configurazione Database Gaurosa.it
  */
 
+// Helper ambiente (legge .env nella root)
+require_once __DIR__ . '/lib/env.php';
+
 // Load secrets from external file (gitignored)
 $secretsPath = __DIR__ . '/secrets.php';
 if (!file_exists($secretsPath)) {
@@ -12,12 +15,8 @@ if (!file_exists($secretsPath)) {
 }
 $secrets = require $secretsPath;
 
-// Rileva ambiente
-$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-$isLocal = $host === 'localhost' 
-        || strpos($host, 'localhost') !== false
-        || $host === '127.0.0.1'
-        || strpos($host, '127.0.0.1') !== false;
+// Rileva ambiente (preferisce flag GAUROSA_ENV in .env, fallback su sniffing host)
+$isLocal = gaurosaIsLocal();
 define('IS_LOCAL', $isLocal);
 
 if ($isLocal) {
@@ -45,13 +44,14 @@ define('MAZGEST_API_KEY', $secrets['mazgest_api_key']);
 // Sync API Key (usata per sincronizzazione prodotti da MazGest)
 define('SYNC_API_KEY', $secrets['sync_api_key']);
 
-// Email SMTP
-define('SMTP_HOST', $secrets['smtp']['host']);
-define('SMTP_PORT', $secrets['smtp']['port']);
-define('SMTP_USER', $secrets['smtp']['user']);
-define('SMTP_PASS', $secrets['smtp']['pass']);
-define('EMAIL_FROM', 'noreplay@gaurosa.it');
-define('EMAIL_FROM_NAME', 'Gaurosa Gioielli');
+// Email SMTP — .env ha precedenza (in dev: Mailpit localhost:1025). Fallback su secrets.php (prod: Hostinger SMTP).
+define('SMTP_HOST',   gaurosaEnvVar('SMTP_HOST',   $secrets['smtp']['host'] ?? 'localhost'));
+define('SMTP_PORT',   (int) gaurosaEnvVar('SMTP_PORT', $secrets['smtp']['port'] ?? 1025));
+define('SMTP_SECURE', gaurosaEnvVar('SMTP_SECURE', 'true')); // 'true'/'false' string
+define('SMTP_USER',   gaurosaEnvVar('SMTP_USER',   $secrets['smtp']['user'] ?? ''));
+define('SMTP_PASS',   gaurosaEnvVar('SMTP_PASS',   $secrets['smtp']['pass'] ?? ''));
+define('EMAIL_FROM',      gaurosaEnvVar('EMAIL_FROM',      'noreplay@gaurosa.it'));
+define('EMAIL_FROM_NAME', gaurosaEnvVar('EMAIL_FROM_NAME', 'Gaurosa Gioielli'));
 
 // Site URL
 define('SITE_URL', $isLocal ? 'http://localhost:3003' : 'https://gaurosa.it');

@@ -199,6 +199,10 @@ export function transformProduct(p: any) {
       available: p.stock?.available ?? p.inStock ?? (Number(p.stock) > 0),
     },
     variants: p.variants || [],
+    // Flag leggero dal listing API per indicare se il prodotto ha varianti (es. misure).
+    // Quando il listing risponde, l'array variants non c'e' (solo nel dettaglio), ma
+    // ProductCard ha bisogno di sapere se aprire la pagina dettaglio per scegliere la misura.
+    has_variants: Boolean(p.has_variants),
     tags: p.tags || [],
     attributes: p.attributes || {},
   };
