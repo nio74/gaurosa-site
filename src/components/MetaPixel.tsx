@@ -2,7 +2,8 @@
 
 import Script from 'next/script';
 import { usePathname } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { getConsent, CONSENT_EVENT } from '@/lib/cookieConsent';
 
 // Extend window to include fbq
 declare global {
@@ -32,20 +33,37 @@ export function trackCustomEvent(eventName: string, params?: Record<string, unkn
 
 /**
  * MetaPixel component — add once in layout.tsx.
- * Automatically fires PageView on every route change.
+ *
+ * GDPR: lo script Meta Pixel viene caricato SOLO se l'utente ha dato il consenso
+ * marketing tramite il CookieBanner. Finché non c'è consenso, `window.fbq` resta
+ * undefined: tutte le chiamate fbq sparse nel sito (AddToCart, ViewContent, Purchase,
+ * InitiateCheckout) sono già protette da `typeof window.fbq === 'function'` e quindi
+ * diventano automaticamente no-op. Il gating qui è quindi la fonte unica di controllo.
+ *
+ * Reagisce in tempo reale al cambio di consenso (CONSENT_EVENT): se l'utente accetta
+ * il marketing, lo script viene montato e PageView parte.
  */
 export default function MetaPixel() {
   const pathname = usePathname();
+  const [marketingAllowed, setMarketingAllowed] = useState(false);
 
-  // Fire PageView on every client-side navigation
+  // Legge il consenso iniziale e si iscrive ai cambiamenti
   useEffect(() => {
-    if (!PIXEL_ID) return;
+    const update = () => setMarketingAllowed(getConsent()?.marketing === true);
+    update();
+    window.addEventListener(CONSENT_EVENT, update);
+    return () => window.removeEventListener(CONSENT_EVENT, update);
+  }, []);
+
+  // Fire PageView su ogni navigazione, solo se il pixel è attivo (consenso dato)
+  useEffect(() => {
+    if (!PIXEL_ID || !marketingAllowed) return;
     if (typeof window !== 'undefined' && typeof window.fbq === 'function') {
       window.fbq('track', 'PageView');
     }
-  }, [pathname]);
+  }, [pathname, marketingAllowed]);
 
-  if (!PIXEL_ID) return null;
+  if (!PIXEL_ID || !marketingAllowed) return null;
 
   return (
     <>

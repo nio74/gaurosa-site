@@ -26,13 +26,18 @@ export default function ModuloIncisioniPage() {
     testo_incisione: '',
     font: '',
     note: '',
+    privacyConsent: false,
   });
 
   const serverUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3003';
   const maxChars = 30;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
+    if (type === 'checkbox') {
+      setForm((prev) => ({ ...prev, [name]: (e.target as HTMLInputElement).checked }));
+      return;
+    }
     // Limit testo_incisione to maxChars
     if (name === 'testo_incisione' && value.length > maxChars) return;
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -40,6 +45,11 @@ export default function ModuloIncisioniPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.privacyConsent) {
+      setErrorMsg('Devi accettare il trattamento dei dati personali per procedere.');
+      setFormState('error');
+      return;
+    }
     setFormState('loading');
     setErrorMsg('');
 
@@ -265,6 +275,26 @@ export default function ModuloIncisioniPage() {
                     placeholder="Eventuali richieste particolari o informazioni aggiuntive..."
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-rose focus:border-transparent resize-none"
                   />
+                </div>
+
+                {/* Consenso privacy */}
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    id="privacyConsent"
+                    name="privacyConsent"
+                    checked={form.privacyConsent}
+                    onChange={handleChange}
+                    className="mt-0.5 w-4 h-4 accent-brand-rose"
+                  />
+                  <label htmlFor="privacyConsent" className="text-sm text-gray-600">
+                    Ho letto e accetto la{' '}
+                    <Link href="/privacy" className="text-brand-rose hover:underline">
+                      Privacy Policy
+                    </Link>{' '}
+                    e acconsento al trattamento dei miei dati personali per gestire questa richiesta.{' '}
+                    <span className="text-red-500">*</span>
+                  </label>
                 </div>
 
                 {/* Error */}

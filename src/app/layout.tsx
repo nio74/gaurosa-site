@@ -5,6 +5,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { CartProvider } from '@/hooks/useCart';
 import MetaPixel from '@/components/MetaPixel';
+import CookieBanner from '@/components/CookieBanner';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -53,6 +54,7 @@ export default function RootLayout({
             <Footer />
           </div>
         </CartProvider>
+        <CookieBanner />
       </body>
     </html>
   );

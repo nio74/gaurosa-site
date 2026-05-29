@@ -23,6 +23,13 @@ if (!in_array($type, ['reso', 'incisioni', 'cambio-taglia'])) {
     jsonResponse(['success' => false, 'error' => 'Tipo modulo non valido'], 400);
 }
 
+// GDPR: consenso al trattamento dati personali obbligatorio.
+// I moduli incisioni/cambio-taglia inviano `privacyConsent`; modulo-reso invia `consenso`.
+$consent = $body['privacyConsent'] ?? $body['consenso'] ?? false;
+if ($consent !== true && $consent !== 'true' && $consent !== 1 && $consent !== '1') {
+    jsonResponse(['success' => false, 'error' => 'Devi accettare il trattamento dei dati personali (Privacy Policy) per inviare la richiesta.'], 400);
+}
+
 // ─── Build email content based on type ───────────────────────────────────────
 
 switch ($type) {

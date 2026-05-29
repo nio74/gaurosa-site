@@ -21,12 +21,17 @@ export default function ModuloCambioTagliaPage() {
     misura_attuale: '',
     misura_desiderata: '',
     note: '',
+    privacyConsent: false,
   });
 
   const serverUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3003';
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
+    const { name, value, type } = e.target;
+    if (type === 'checkbox') {
+      setForm((prev) => ({ ...prev, [name]: (e.target as HTMLInputElement).checked }));
+      return;
+    }
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -35,6 +40,12 @@ export default function ModuloCambioTagliaPage() {
 
     if (form.misura_attuale === form.misura_desiderata) {
       setErrorMsg('La misura desiderata deve essere diversa da quella attuale.');
+      setFormState('error');
+      return;
+    }
+
+    if (!form.privacyConsent) {
+      setErrorMsg('Devi accettare il trattamento dei dati personali per procedere.');
       setFormState('error');
       return;
     }
@@ -290,6 +301,26 @@ export default function ModuloCambioTagliaPage() {
                   <Link href="/guida-misura-anelli" className="text-brand-rose hover:underline font-medium">
                     Consulta la nostra guida alle misure →
                   </Link>
+                </div>
+
+                {/* Consenso privacy */}
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    id="privacyConsent"
+                    name="privacyConsent"
+                    checked={form.privacyConsent}
+                    onChange={handleChange}
+                    className="mt-0.5 w-4 h-4 accent-brand-rose"
+                  />
+                  <label htmlFor="privacyConsent" className="text-sm text-gray-600">
+                    Ho letto e accetto la{' '}
+                    <Link href="/privacy" className="text-brand-rose hover:underline">
+                      Privacy Policy
+                    </Link>{' '}
+                    e acconsento al trattamento dei miei dati personali per gestire questa richiesta.{' '}
+                    <span className="text-red-500">*</span>
+                  </label>
                 </div>
 
                 {/* Error */}

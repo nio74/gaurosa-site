@@ -34,7 +34,7 @@ export default function CookiePage() {
               animate={{ opacity: 1, y: 0 }}
               className="space-y-10"
             >
-              <p className="text-sm text-gray-400">Ultimo aggiornamento: 11 febbraio 2026</p>
+              <p className="text-sm text-gray-400">Ultimo aggiornamento: 29 maggio 2026</p>
 
               {/* 1. Cosa sono */}
               <div>
@@ -97,30 +97,13 @@ export default function CookiePage() {
                   <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
                     <h3 className="font-semibold text-blue-900 mb-2">Cookie Analitici (previo consenso)</h3>
                     <p className="text-sm text-blue-800 mb-3">
-                      Questi cookie ci permettono di raccogliere informazioni anonime sull&apos;utilizzo del Sito 
-                      per migliorare i nostri servizi.
+                      Questi cookie permetterebbero di raccogliere informazioni anonime sull&apos;utilizzo
+                      del Sito per migliorare i nostri servizi.
                     </p>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-xs">
-                        <thead>
-                          <tr className="border-b border-blue-200">
-                            <th className="text-left py-2 pr-4 font-semibold text-blue-900">Servizio</th>
-                            <th className="text-left py-2 pr-4 font-semibold text-blue-900">Finalità</th>
-                            <th className="text-left py-2 font-semibold text-blue-900">Durata</th>
-                          </tr>
-                        </thead>
-                        <tbody className="text-blue-800">
-                          <tr>
-                            <td className="py-2 pr-4">Google Analytics 4</td>
-                            <td className="py-2 pr-4">Statistiche di utilizzo anonime</td>
-                            <td className="py-2">26 mesi</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                    <p className="text-xs text-blue-700 mt-3">
-                      Google Analytics è configurato con anonimizzazione dell&apos;indirizzo IP. 
-                      I dati raccolti non permettono l&apos;identificazione diretta dell&apos;utente.
+                    <p className="text-xs text-blue-700">
+                      Allo stato attuale <strong>non utilizziamo cookie analitici di terze parti</strong>.
+                      Qualora dovessimo attivarli in futuro, saranno elencati qui e subordinati al tuo
+                      consenso espresso tramite il banner cookie.
                     </p>
                   </div>
 
@@ -128,7 +111,9 @@ export default function CookiePage() {
                   <div className="bg-amber-50 border border-amber-200 rounded-xl p-5">
                     <h3 className="font-semibold text-amber-900 mb-2">Cookie di Marketing (previo consenso)</h3>
                     <p className="text-sm text-amber-800 mb-3">
-                      Questi cookie sono utilizzati per mostrare annunci pubblicitari pertinenti ai tuoi interessi.
+                      Questi cookie sono utilizzati per misurare l&apos;efficacia delle campagne e mostrare
+                      contenuti pertinenti ai tuoi interessi. Vengono attivati <strong>solo</strong> dopo il
+                      tuo consenso espresso tramite il banner cookie.
                     </p>
                     <div className="overflow-x-auto">
                       <table className="w-full text-xs">
@@ -140,14 +125,9 @@ export default function CookiePage() {
                           </tr>
                         </thead>
                         <tbody className="text-amber-800">
-                          <tr className="border-b border-amber-100">
-                            <td className="py-2 pr-4">Meta Pixel (Facebook)</td>
-                            <td className="py-2 pr-4">Remarketing e conversioni</td>
-                            <td className="py-2">90 giorni</td>
-                          </tr>
                           <tr>
-                            <td className="py-2 pr-4">Google Ads</td>
-                            <td className="py-2 pr-4">Monitoraggio conversioni</td>
+                            <td className="py-2 pr-4">Meta Pixel (Facebook)</td>
+                            <td className="py-2 pr-4">Remarketing e misurazione conversioni</td>
                             <td className="py-2">90 giorni</td>
                           </tr>
                         </tbody>

@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+
+# Aree riservate / non indicizzabili
+Disallow: /api/
+Disallow: /account/
+Disallow: /carrello/
+Disallow: /checkout/
+Disallow: /ordine/
+Disallow: /verifica-email/
+
+Sitemap: https://gaurosa.it/sitemap.xml
