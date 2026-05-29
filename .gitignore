@@ -53,3 +53,7 @@ next-env.d.ts
 
 # backups DB
 /backups/
+
+# script dev locali (contengono credenziali/SSH - NON committare)
+backup-gaurosa-db.bat
+tunnel.bat
