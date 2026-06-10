@@ -7,22 +7,27 @@ import Image from 'next/image';
 import { ArrowRight, Sparkles, Shield, Truck, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import Button from '@/components/ui/Button';
 
-// Categorie in evidenza
-const categories = [
+// Trust cards — perché scegliere Gaurosa
+// Card statiche (non cliccabili) con foto reali del negozio Gaurosa.
+// I file vanno salvati in public/images/cards/ con questi nomi esatti.
+const trustCards = [
   {
-    name: 'Gioielli',
-    description: 'Collane, anelli, bracciali e orecchini',
-    href: '/prodotti',
+    title: 'Gioielleria dal 1960',
+    description: 'Oltre 60 anni di esperienza nella gioielleria e nella selezione di preziosi.',
+    img: '/images/cards/card-1.jpg', // orafo al banco
+    imgAlt: 'Orafo Gaurosa al lavoro su un anello al banco di lavoro',
   },
   {
-    name: 'Orologi',
-    description: 'Le migliori marche selezionate',
-    href: '/prodotti?categoria=orologi',
+    title: 'Confezione Regalo Inclusa',
+    description: 'Ogni gioiello arriva in una confezione elegante, pronta da regalare.',
+    img: '/images/cards/card-2.jpg', // packaging rosa
+    imgAlt: 'Confezioni regalo eleganti Gaurosa: scatole, sacchetti e certificato di garanzia',
   },
   {
-    name: 'Accessori',
-    description: 'Gemelli, spille e molto altro',
-    href: '/prodotti?categoria=accessori',
+    title: 'Assistenza Reale',
+    description: 'Ti aiutiamo nella scelta prima e dopo l’acquisto anche tramite WhatsApp.',
+    img: '/images/cards/card-3.jpg', // bancone negozio
+    imgAlt: 'Interno della gioielleria Gaurosa con il bancone e le vetrine',
   },
 ];
 
@@ -116,9 +121,9 @@ export default function HomePage() {
                 transition={{ duration: 0.8 }}
                 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight text-gray-900 leading-tight"
               >
-                L&apos;eleganza che
+                Gioielli che <span className="text-brand-rose">emozionano</span>
                 <br />
-                <span className="text-brand-rose">ti distingue</span>
+                da 60 anni
               </motion.h1>
 
               <motion.p
@@ -127,8 +132,8 @@ export default function HomePage() {
                 transition={{ duration: 0.8, delay: 0.2 }}
                 className="mt-6 text-lg sm:text-xl text-gray-700 max-w-xl"
               >
-                Scopri la nostra collezione esclusiva di gioielli e orologi.
-                Qualità, stile e passione dal 1990.
+                Scopri le collezioni Gaurosa selezionate dalla famiglia Mazzon
+                per celebrare ogni momento speciale.
               </motion.p>
 
               <motion.div
@@ -139,7 +144,7 @@ export default function HomePage() {
               >
                 <Link href="/prodotti">
                   <Button size="lg" className="bg-brand-rose text-white hover:bg-brand-rose-dark">
-                    Esplora la Collezione
+                    Scopri le Collezioni
                     <ArrowRight className="ml-2 w-5 h-5" />
                   </Button>
                 </Link>
@@ -174,7 +179,7 @@ export default function HomePage() {
         </motion.div>
       </section>
 
-      {/* Categories Section */}
+      {/* Trust Cards — Perché scegliere Gaurosa */}
       <section className="py-16 lg:py-24 bg-white">
         <div className="container mx-auto px-4">
           <motion.div
@@ -184,41 +189,49 @@ export default function HomePage() {
             className="text-center mb-12"
           >
             <h2 className="text-3xl lg:text-4xl font-bold text-gray-900">
-              Le Nostre Categorie
+              Perché scegliere Gaurosa
             </h2>
             <p className="mt-4 text-gray-600 max-w-2xl mx-auto">
-              Esplora le nostre collezioni curate con passione e attenzione ai dettagli
+              Esperienza, cura e assistenza reale prima e dopo l’acquisto.
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
-            {categories.map((category, index) => (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 md:gap-6 lg:gap-8">
+            {trustCards.map((card, index) => (
               <motion.div
-                key={category.name}
+                key={card.title}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
+                className="group"
               >
-                <Link href={category.href} className="group block">
-                  <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-gray-200">
-                    {/* Placeholder gradient - Simone sostituirà con immagini reali */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-gray-300 to-gray-400" />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
-                    <div className="absolute inset-0 flex flex-col justify-end p-6">
-                      <h3 className="text-2xl font-bold text-white drop-shadow-lg">
-                        {category.name}
-                      </h3>
-                      <p className="mt-2 text-white/90 drop-shadow-md">
-                        {category.description}
-                      </p>
-                      <div className="mt-4 flex items-center text-white font-medium">
-                        <span>Scopri</span>
-                        <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-2 transition-transform" />
-                      </div>
-                    </div>
+                {/* Card statica — non cliccabile, solo visual + testo.
+                    Niente aspect-ratio rigido: usiamo min-height scalabile.
+                    Su mobile (full width) -> landscape. Su lg (1/3 width) -> quasi quadrata o leggermente landscape su monitor grandi. */}
+                <div className="relative min-h-[260px] sm:min-h-[320px] md:min-h-[380px] lg:min-h-[460px] xl:min-h-[500px] overflow-hidden rounded-2xl bg-gray-200 transition-shadow duration-300 group-hover:shadow-xl">
+                  {/* Layer 1 — Foto reale */}
+                  <Image
+                    src={card.img}
+                    alt={card.imgAlt}
+                    fill
+                    sizes="(max-width: 768px) 100vw, 33vw"
+                    className="object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+
+                  {/* Layer 2 — Gradient scuro in basso per leggibilità testo bianco */}
+                  <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/75 via-black/25 to-transparent pointer-events-none" />
+
+                  {/* Layer 3 — Testo ancorato in basso */}
+                  <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6 lg:p-7">
+                    <h3 className="text-xl sm:text-2xl lg:text-[1.7rem] font-bold text-white drop-shadow-lg leading-tight">
+                      {card.title}
+                    </h3>
+                    <p className="mt-2 sm:mt-3 text-sm sm:text-base lg:text-lg text-white/90 drop-shadow-md leading-snug">
+                      {card.description}
+                    </p>
                   </div>
-                </Link>
+                </div>
               </motion.div>
             ))}
           </div>
@@ -258,10 +271,10 @@ export default function HomePage() {
             viewport={{ once: true }}
           >
             <h2 className="text-3xl lg:text-4xl font-bold">
-              Iscriviti alla Newsletter
+              Ricevi offerte esclusive
             </h2>
             <p className="mt-4 text-brand-pink/70 max-w-xl mx-auto">
-              Resta aggiornata sulle novità, offerte esclusive e ricevi subito un{' '}
+              Iscriviti alla newsletter e ottieni subito un{' '}
               <strong className="text-white">10% di sconto</strong> sul primo ordine.
             </p>
 
