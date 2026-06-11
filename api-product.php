@@ -36,7 +36,7 @@ try {
         FROM products p
         LEFT JOIN brands b ON p.brand_id = b.id
         LEFT JOIN suppliers s ON p.supplier_id = s.id
-        WHERE p.code = :code OR p.slug = :slug
+        WHERE (p.code = :code OR p.slug = :slug) AND p.stock > 0 AND p.is_active = 1
         LIMIT 1
     ";
     
