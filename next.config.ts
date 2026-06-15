@@ -49,6 +49,7 @@ const nextConfig: NextConfig = {
         { source: '/api-filters.php', destination: 'http://localhost/gaurosa-site/api-filters.php' },
         { source: '/api-collections.php', destination: 'http://localhost/gaurosa-site/api-collections.php' },
         { source: '/api-config.php', destination: 'http://localhost/gaurosa-site/api-config.php' },
+        { source: '/api-sync-images.php', destination: 'http://localhost/gaurosa-site/api-sync-images.php' },
         // Note: api/sync/*.php files are covered by the /api/:path* rule above
       ];
     },
