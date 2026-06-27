@@ -382,11 +382,14 @@ export default function ProductDetailClient({ code: codeProp }: { code: string }
               onMouseMove={handleMouseMove}
             >
               {/* Normal image (visible always) */}
+              {/* Lo zoom-on-hover esiste solo su desktop (layer `hidden lg:block`).
+                  L'immagine principale può diventare trasparente SOLO su lg+, altrimenti
+                  su mobile (dove il tocco/le frecce attivano isZooming) sparirebbe → grigio. */}
               <Image
                 src={images[selectedImage].url}
                 alt={product.name}
                 fill
-                className={`object-cover transition-opacity duration-200 ${isZooming ? 'opacity-0 lg:opacity-0' : 'opacity-100'}`}
+                className={`object-cover transition-opacity duration-200 opacity-100 ${isZooming ? 'lg:opacity-0' : ''}`}
                 sizes="(max-width: 1024px) 100vw, 50vw"
                 priority
                 placeholder={images[selectedImage].blur_data_uri ? "blur" : "empty"}
