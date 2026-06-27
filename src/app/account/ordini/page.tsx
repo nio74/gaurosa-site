@@ -460,6 +460,27 @@ export default function OrderHistoryPage() {
                     <p>{selectedOrder.shippingAddress.country}</p>
                   </div>
                 </div>
+
+                {/* Diritto di recesso (art. 54-bis) — pulsante visibile nell'ordine */}
+                {selectedOrder.status !== 'cancelled' && (
+                  <div className="bg-white rounded-xl p-6 shadow-sm">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Diritto di recesso</h3>
+                    <p className="text-sm text-gray-600 mb-4">
+                      Hai cambiato idea? Puoi recedere dal contratto entro 14 giorni dalla consegna,
+                      senza dover fornire motivazioni.
+                    </p>
+                    <Link
+                      href={`/recesso?order=${encodeURIComponent(selectedOrder.orderNumber)}&beni=${encodeURIComponent(
+                        selectedOrder.items
+                          .map((it) => `${it.productName}${it.orderedSize ? ` (misura ${it.orderedSize})` : ''} x${it.quantity}`)
+                          .join('; ')
+                      )}`}
+                      className="inline-flex w-full items-center justify-center gap-2 px-5 py-2.5 border border-brand-rose text-brand-rose font-medium rounded-xl hover:bg-brand-rose hover:text-white transition-colors text-sm"
+                    >
+                      Recedere dal contratto qui
+                    </Link>
+                  </div>
+                )}
               </div>
 
               {/* Right column - Order items and totals */}

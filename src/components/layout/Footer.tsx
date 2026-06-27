@@ -17,6 +17,7 @@ const footerLinks = {
     { name: 'Pagamento Sicuro', href: '/pagamento-sicuro' },
     { name: 'Spedizioni', href: '/spedizioni' },
     { name: 'Resi e Garanzia', href: '/resi' },
+    { name: 'Diritto di Recesso', href: '/recesso' },
     { name: 'Guida Misura Anelli', href: '/guida-misura-anelli' },
     { name: 'Modulo Reso', href: '/modulo-reso' },
     { name: 'Modulo Incisioni', href: '/modulo-incisioni' },
