@@ -151,7 +151,7 @@ export default function PrivacyPage() {
                 <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm text-gray-600">
                   <p><strong className="text-gray-900">Dati contrattuali e fiscali:</strong> 10 anni dalla conclusione del rapporto contrattuale, come previsto dalla normativa fiscale italiana.</p>
                   <p><strong className="text-gray-900">Dati dell&apos;account:</strong> fino alla cancellazione dell&apos;account da parte dell&apos;utente.</p>
-                  <p><strong className="text-gray-900">Dati di navigazione:</strong> 26 mesi dalla raccolta.</p>
+                  <p><strong className="text-gray-900">Log tecnici del server (es. indirizzo IP):</strong> fino a 12 mesi, per finalità di sicurezza e diagnostica.</p>
                   <p><strong className="text-gray-900">Dati per marketing:</strong> fino alla revoca del consenso.</p>
                 </div>
               </div>
@@ -168,6 +168,9 @@ export default function PrivacyPage() {
                     'Fornitori di servizi di pagamento (Stripe, PayPal)',
                     'Servizi di autenticazione (Google Sign-In - Google Ireland Limited)',
                     'Servizi di hosting e infrastruttura IT (Hostinger)',
+                    'Software gestionale del negozio (MazGest) per la gestione di ordini, clienti e assistenza',
+                    'Servizi di email marketing e newsletter (Brevo - Sendinblue SAS), previo consenso',
+                    'Piattaforme pubblicitarie e di misurazione (Meta Platforms Ireland Ltd. - Meta Pixel), previo consenso',
                     'Consulenti fiscali e commercialisti (per obblighi di legge)',
                     'Autorità competenti (se richiesto dalla legge)',
                   ].map((item, i) => (
@@ -178,8 +181,13 @@ export default function PrivacyPage() {
                   ))}
                 </ul>
                 <p className="text-gray-600 text-sm mt-4">
-                  I dati personali <strong>non vengono venduti</strong> a terzi e non vengono trasferiti 
-                  al di fuori dello Spazio Economico Europeo (SEE).
+                  I dati personali <strong>non vengono venduti</strong> a terzi. La maggior parte dei
+                  trattamenti avviene all&apos;interno dello Spazio Economico Europeo (SEE). Alcuni
+                  fornitori — in particolare <strong>Meta Platforms</strong> (Meta Pixel, attivo solo
+                  previo consenso) — possono trattare dati anche al di fuori del SEE, negli Stati Uniti.
+                  Tali trasferimenti avvengono sulla base di <strong>garanzie adeguate</strong> ai sensi
+                  degli artt. 44 e ss. del GDPR (decisione di adeguatezza EU-US Data Privacy Framework
+                  e/o Clausole Contrattuali Standard).
                 </p>
               </div>
 

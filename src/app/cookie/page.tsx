@@ -184,7 +184,6 @@ export default function CookiePage() {
                 </p>
                 <ul className="space-y-2">
                   {[
-                    { name: 'Google Analytics', url: 'https://policies.google.com/privacy' },
                     { name: 'Meta (Facebook)', url: 'https://www.facebook.com/privacy/policy/' },
                     { name: 'PayPal', url: 'https://www.paypal.com/it/legalhub/privacy-full' },
                     { name: 'Stripe', url: 'https://stripe.com/it/privacy' },

@@ -8,5 +8,6 @@ Disallow: /carrello/
 Disallow: /checkout/
 Disallow: /ordine/
 Disallow: /verifica-email/
+Disallow: /prodotti/_shell/
 
 Sitemap: https://gaurosa.it/sitemap.xml
