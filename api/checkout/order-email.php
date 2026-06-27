@@ -128,7 +128,7 @@ function sendOrderEmail($to, $subject, $htmlBody) {
  * Invia notifica nuovo ordine al negozio
  */
 function sendOrderNotificationEmail($order, $items, $shippingAddress) {
-    $shopEmail = EMAIL_FROM; // noreplay@gaurosa.it - o un indirizzo dedicato
+    $shopEmail = 'info@gaurosa.it'; // indirizzo negozio che riceve le notifiche dei nuovi ordini
     $subject = "🛒 Nuovo ordine {$order['order_number']} - €" . number_format($order['total'], 2, ',', '.');
 
     $itemsList = '';
