@@ -22,6 +22,10 @@ RewriteRule ^maintenance\.json$ - [L]
 # ── 2. API folder ────────────────────────────────────────────────────
 RewriteRule ^api(/.*)?$ api$1 [L]
 
+# ── 2b. Google Merchant feed (alias pulito) ──────────────────────────
+# Esposto fuori da /api/ così robots.txt non lo blocca; internamente serve il PHP.
+RewriteRule ^google-merchant\.xml$ api/meta-catalog.php [L]
+
 # ── 3. Static files: serve from out/ ────────────────────────────────
 # Exact file match in out/
 RewriteCond %{DOCUMENT_ROOT}/out%{REQUEST_URI} -f

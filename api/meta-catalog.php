@@ -162,7 +162,7 @@ try {
 
         $brand           = xmlEscape($p['brand_name'] ?? 'Gaurosa');
         $title           = xmlEscape($p['name']);
-        $productLink     = 'https://gaurosa.it/prodotti/' . xmlEscape($p['code']);
+        $productLink     = 'https://gaurosa.it/prodotti/' . xmlEscape($p['code']) . '/';
         $availabilityRaw = getAvailability($p['stock_status'], (int)$p['stock']);
         $availability    = xmlEscape($availabilityRaw);
         $condition       = xmlEscape(getCondition($p['item_condition']));
