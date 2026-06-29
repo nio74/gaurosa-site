@@ -24,6 +24,8 @@ const businessJsonLd = {
   url: SITE_URL,
   telephone: '+393926191199',
   email: 'info@gaurosa.it',
+  image: `${SITE_URL}/images/hero-jewelry.jpg`,
+  logo: `${SITE_URL}/images/logo-gaurosa.png`,
   vatID: 'IT05120880280',
   priceRange: '€€€',
   address: {
@@ -72,9 +74,11 @@ export const metadata: Metadata = {
     siteName: 'Gaurosa',
     title: 'Gaurosa - Gioielli e Orologi',
     description: 'Scopri la nostra collezione di gioielli e orologi selezionati.',
+    images: ['/images/hero-jewelry.jpg'],
   },
   twitter: {
     card: 'summary_large_image',
+    images: ['/images/hero-jewelry.jpg'],
   },
   robots: {
     index: true,
