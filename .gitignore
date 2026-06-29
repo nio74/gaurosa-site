@@ -54,6 +54,11 @@ next-env.d.ts
 # backups DB
 /backups/
 
+# dump database completo (contengono PII clienti/token - NON committare MAI)
+gaurosasite_export.sql
+*_export.sql
+*.sql.gz
+
 # script dev locali (contengono credenziali/SSH - NON committare)
 backup-gaurosa-db.bat
 tunnel.bat
