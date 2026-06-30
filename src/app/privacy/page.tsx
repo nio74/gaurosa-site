@@ -171,6 +171,7 @@ export default function PrivacyPage() {
                     'Software gestionale del negozio (MazGest) per la gestione di ordini, clienti e assistenza',
                     'Servizi di email marketing e newsletter (Brevo - Sendinblue SAS), previo consenso',
                     'Piattaforme pubblicitarie e di misurazione (Meta Platforms Ireland Ltd. - Meta Pixel), previo consenso',
+                    'Servizi di statistica e analytics (Google Ireland Ltd. - Google Analytics 4), previo consenso',
                     'Consulenti fiscali e commercialisti (per obblighi di legge)',
                     'Autorità competenti (se richiesto dalla legge)',
                   ].map((item, i) => (
@@ -183,8 +184,9 @@ export default function PrivacyPage() {
                 <p className="text-gray-600 text-sm mt-4">
                   I dati personali <strong>non vengono venduti</strong> a terzi. La maggior parte dei
                   trattamenti avviene all&apos;interno dello Spazio Economico Europeo (SEE). Alcuni
-                  fornitori — in particolare <strong>Meta Platforms</strong> (Meta Pixel, attivo solo
-                  previo consenso) — possono trattare dati anche al di fuori del SEE, negli Stati Uniti.
+                  fornitori — in particolare <strong>Meta Platforms</strong> (Meta Pixel) e <strong>Google</strong>
+                  (Google Analytics), attivi solo previo consenso — possono trattare dati anche al di fuori del SEE,
+                  negli Stati Uniti.
                   Tali trasferimenti avvengono sulla base di <strong>garanzie adeguate</strong> ai sensi
                   degli artt. 44 e ss. del GDPR (decisione di adeguatezza EU-US Data Privacy Framework
                   e/o Clausole Contrattuali Standard).

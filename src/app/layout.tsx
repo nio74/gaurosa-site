@@ -5,6 +5,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { CartProvider } from '@/hooks/useCart';
 import MetaPixel from '@/components/MetaPixel';
+import GoogleAnalytics from '@/components/GoogleAnalytics';
 import CookieBanner from '@/components/CookieBanner';
 
 const inter = Inter({
@@ -99,6 +100,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(businessJsonLd) }}
         />
         <MetaPixel />
+        <GoogleAnalytics />
         <CartProvider>
           <div className="flex flex-col min-h-screen">
             <Header />

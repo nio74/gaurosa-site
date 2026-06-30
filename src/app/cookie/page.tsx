@@ -97,14 +97,28 @@ export default function CookiePage() {
                   <div className="bg-blue-50 border border-blue-200 rounded-xl p-5">
                     <h3 className="font-semibold text-blue-900 mb-2">Cookie Analitici (previo consenso)</h3>
                     <p className="text-sm text-blue-800 mb-3">
-                      Questi cookie permetterebbero di raccogliere informazioni anonime sull&apos;utilizzo
-                      del Sito per migliorare i nostri servizi.
+                      Questi cookie raccolgono informazioni in forma aggregata sull&apos;utilizzo del Sito
+                      (pagine visitate, durata della visita, provenienza) per aiutarci a migliorare i nostri
+                      servizi. Vengono attivati <strong>solo</strong> dopo il tuo consenso espresso tramite il banner cookie.
                     </p>
-                    <p className="text-xs text-blue-700">
-                      Allo stato attuale <strong>non utilizziamo cookie analitici di terze parti</strong>.
-                      Qualora dovessimo attivarli in futuro, saranno elencati qui e subordinati al tuo
-                      consenso espresso tramite il banner cookie.
-                    </p>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr className="border-b border-blue-200">
+                            <th className="text-left py-2 pr-4 font-semibold text-blue-900">Servizio</th>
+                            <th className="text-left py-2 pr-4 font-semibold text-blue-900">Cookie</th>
+                            <th className="text-left py-2 font-semibold text-blue-900">Durata</th>
+                          </tr>
+                        </thead>
+                        <tbody className="text-blue-800">
+                          <tr>
+                            <td className="py-2 pr-4">Google Analytics 4 (Google Ireland Ltd.)</td>
+                            <td className="py-2 pr-4">_ga, _ga_*</td>
+                            <td className="py-2">fino a 2 anni</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
 
                   {/* Marketing */}
@@ -184,6 +198,7 @@ export default function CookiePage() {
                 </p>
                 <ul className="space-y-2">
                   {[
+                    { name: 'Google Analytics', url: 'https://policies.google.com/privacy' },
                     { name: 'Meta (Facebook)', url: 'https://www.facebook.com/privacy/policy/' },
                     { name: 'PayPal', url: 'https://www.paypal.com/it/legalhub/privacy-full' },
                     { name: 'Stripe', url: 'https://stripe.com/it/privacy' },
