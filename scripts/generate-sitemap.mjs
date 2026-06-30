@@ -32,6 +32,7 @@ const STATIC_PAGES = [
   { path: '/spedizioni/', changefreq: 'monthly', priority: '0.5' },
   { path: '/resi/', changefreq: 'monthly', priority: '0.5' },
   { path: '/recesso/', changefreq: 'yearly', priority: '0.4' },
+  { path: '/modulo-recesso-tipo/', changefreq: 'yearly', priority: '0.3' },
   { path: '/guida-misura-anelli/', changefreq: 'monthly', priority: '0.5' },
   { path: '/privacy/', changefreq: 'yearly', priority: '0.3' },
   { path: '/cookie/', changefreq: 'yearly', priority: '0.3' },

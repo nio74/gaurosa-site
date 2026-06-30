@@ -150,15 +150,28 @@ export default function TerminiPage() {
                 <h2 className="text-xl font-bold text-gray-900 mb-3">7. Diritto di Recesso</h2>
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
                   <p className="text-green-800 text-sm font-medium">
-                    L&apos;acquirente ha diritto di recedere dal contratto entro 60 giorni dalla consegna del prodotto, 
-                    senza dover fornire alcuna motivazione.
+                    L&apos;acquirente ha diritto di recedere dal contratto entro <strong>14 giorni</strong> dalla consegna del prodotto,
+                    senza dover fornire alcuna motivazione (art. 52 D.Lgs. 206/2005).
                   </p>
                 </div>
                 <p className="text-gray-600 text-sm leading-relaxed">
-                  Per esercitare il diritto di recesso, l&apos;acquirente deve compilare il modulo di reso disponibile 
-                  sul Sito e restituire il prodotto nelle condizioni originali, completo di confezione regalo, 
-                  certificazioni e tutti gli elementi complementari. Il costo della spedizione di reso è a carico 
-                  dell&apos;acquirente. Per maggiori dettagli, consulta la pagina{' '}
+                  Per esercitare il diritto di recesso, l&apos;acquirente deve comunicarlo tramite il{' '}
+                  <Link href="/recesso" className="text-gray-900 underline font-medium">modulo di recesso</Link>{' '}
+                  disponibile sul Sito oppure inviando una dichiarazione scritta inequivocabile a{' '}
+                  <a href="mailto:info@gaurosa.it" className="underline">info@gaurosa.it</a>.
+                  Il prodotto deve essere restituito nelle condizioni originali, completo di confezione regalo,
+                  certificazioni e tutti gli elementi complementari. Le spese di spedizione per la restituzione
+                  sono a carico dell&apos;acquirente (art. 57 D.Lgs. 206/2005). Il rimborso — comprensivo delle
+                  spese di consegna standard iniziali — avverrà entro 14 giorni dalla ricezione della comunicazione
+                  di recesso, con lo stesso mezzo di pagamento utilizzato per l&apos;acquisto (art. 56 D.Lgs. 206/2005).
+                </p>
+                <p className="text-gray-600 text-sm leading-relaxed mt-3">
+                  <strong>Esclusioni dal diritto di recesso (art. 59 D.Lgs. 206/2005):</strong> il diritto di recesso
+                  non si applica ai beni confezionati su misura o chiaramente personalizzati, tra cui gioielli con
+                  incisione, anelli ridimensionati su specifica del cliente e gioielli realizzati su commessa
+                  (produzione propria). Puoi inoltre utilizzare il{' '}
+                  <Link href="/modulo-recesso-tipo" className="text-gray-900 underline font-medium">modulo tipo di recesso</Link>{' '}
+                  (Allegato I.B Cod. Consumo). Per maggiori dettagli, consulta la pagina{' '}
                   <Link href="/resi" className="text-gray-900 underline font-medium">Resi e Garanzia</Link>.
                 </p>
               </div>
@@ -167,11 +180,17 @@ export default function TerminiPage() {
               <div>
                 <h2 className="text-xl font-bold text-gray-900 mb-3">8. Garanzia</h2>
                 <p className="text-gray-600 text-sm leading-relaxed">
-                  Tutti i prodotti Gaurosa sono coperti dalla garanzia legale di conformità ai sensi degli 
-                  artt. 128-135 del Codice del Consumo (D.Lgs. 206/2005). In aggiunta, il Venditore offre 
-                  una garanzia gratuita per difetti di fabbricazione. La garanzia non copre danni causati da 
-                  uso improprio, negligenza, interventi di terzi o normale usura. Per i dettagli completi, 
-                  consulta la pagina <Link href="/resi" className="text-gray-900 underline font-medium">Resi e Garanzia</Link>.
+                  Tutti i prodotti Gaurosa sono coperti dalla <strong>garanzia legale di conformità</strong> prevista dagli
+                  artt. 128-135 del Codice del Consumo (D.Lgs. 206/2005), della durata di <strong>24 mesi dalla consegna</strong>.
+                  In caso di difetto di conformità, il consumatore ha diritto, a sua scelta, alla riparazione o alla
+                  sostituzione del bene, oppure — nei casi previsti dalla legge — alla riduzione del prezzo o alla
+                  risoluzione del contratto. Questa garanzia legale è distinta e non limita l&apos;eventuale garanzia
+                  commerciale offerta dal Venditore.
+                </p>
+                <p className="text-gray-600 text-sm leading-relaxed mt-3">
+                  Il Venditore offre inoltre una garanzia commerciale gratuita per difetti di fabbricazione.
+                  La garanzia non copre danni causati da uso improprio, negligenza, interventi di terzi o normale usura.
+                  Per i dettagli completi, consulta la pagina <Link href="/resi" className="text-gray-900 underline font-medium">Resi e Garanzia</Link>.
                 </p>
               </div>
 

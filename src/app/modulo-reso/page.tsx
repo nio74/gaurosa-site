@@ -110,7 +110,7 @@ export default function ModuloResoPage() {
               Modulo di Reso
             </h1>
             <p className="mt-6 text-lg text-white/80 max-w-2xl mx-auto">
-              Compila il modulo per avviare la procedura di reso. Hai 60 giorni dalla consegna.
+              Compila il modulo per avviare la procedura di reso. Hai 14 giorni dalla consegna per esercitare il diritto di recesso.
             </p>
           </motion.div>
         </div>
@@ -129,7 +129,7 @@ export default function ModuloResoPage() {
               <div className="flex items-start gap-3">
                 <RotateCcw className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
                 <div className="text-sm text-green-800">
-                  <p className="font-semibold mb-1">Hai 60 giorni per il reso</p>
+                  <p className="font-semibold mb-1">Hai 14 giorni per esercitare il recesso (art. 52 Cod. Consumo)</p>
                   <ul className="space-y-1">
                     {[
                       'Il prodotto deve essere non indossato e nelle condizioni originali',

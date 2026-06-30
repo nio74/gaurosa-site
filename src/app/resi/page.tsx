@@ -26,7 +26,7 @@ export default function ResiPage() {
               Resi e Garanzia
             </h1>
             <p className="mt-6 text-lg text-white/80 max-w-2xl mx-auto">
-              60 giorni per il reso, garanzia gratuita su tutti i prodotti. 
+              14 giorni per esercitare il recesso, garanzia legale 24 mesi su tutti i prodotti.
               La tua soddisfazione è la nostra priorità.
             </p>
           </motion.div>
@@ -74,7 +74,7 @@ export default function ResiPage() {
               <div className="bg-white rounded-xl p-6 shadow-sm space-y-4">
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                   <p className="text-green-800 font-medium">
-                    Hai tempo <strong>60 giorni</strong> dalla consegna per concordare un reso.
+                    Hai tempo <strong>14 giorni</strong> dalla consegna per esercitare il diritto di recesso (art. 52 Cod. Consumo).
                   </p>
                 </div>
 
@@ -110,8 +110,8 @@ export default function ResiPage() {
                   {[
                     'L\'oggetto non è stato indossato e non presenta alcun segno di utilizzo',
                     'Il prodotto deve essere restituito completo di tutti gli elementi complementari (confezione regalo, certificazioni, articoli promozionali)',
-                    'Il prodotto non è un ordine speciale personalizzato e/o realizzato su specifiche del cliente',
-                    'Il prodotto è stato restituito entro 60 giorni dalla consegna',
+                    'Il prodotto non è un ordine speciale personalizzato e/o realizzato su specifiche del cliente (es. con incisione, ridimensionato su misura, realizzato su commessa)',
+                    'La comunicazione di recesso è stata inviata entro 14 giorni dalla consegna',
                   ].map((condition, i) => (
                     <li key={i} className="flex items-start gap-2 text-sm text-gray-600">
                       <ChevronRight className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
@@ -121,8 +121,10 @@ export default function ResiPage() {
                 </ul>
 
                 <p className="text-gray-600 text-sm">
-                  Il rimborso verrà accreditato sul metodo di pagamento originale, esclusi i costi di spedizione. 
-                  Può richiedere fino a 10 giorni lavorativi.
+                  Il rimborso sarà effettuato entro <strong>14 giorni</strong> dalla ricezione della comunicazione di recesso,
+                  con lo stesso mezzo di pagamento utilizzato per l&apos;acquisto, senza addebito di commissioni. Il rimborso
+                  include le spese di consegna standard iniziali; le spese di spedizione per la restituzione del prodotto
+                  sono a carico del cliente (art. 56-57 Cod. Consumo).
                 </p>
               </div>
             </motion.div>
@@ -143,10 +145,18 @@ export default function ResiPage() {
               </div>
 
               <div className="bg-white rounded-xl p-6 shadow-sm space-y-4">
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                  <p className="text-blue-800 text-sm font-medium">
+                    <strong>Garanzia legale di conformità:</strong> tutti i prodotti beneficiano della garanzia
+                    legale di 24 mesi dalla consegna, ai sensi degli artt. 128-135 del Codice del Consumo
+                    (D.Lgs. 206/2005). In caso di difetto, il consumatore ha diritto a riparazione, sostituzione,
+                    riduzione del prezzo o risoluzione del contratto.
+                  </p>
+                </div>
                 <p className="text-gray-600">
-                  I gioielli Gaurosa sono prodotti con cura e materiali di qualità. Tutti i prodotti Gaurosa 
-                  sono forniti con una <strong>garanzia gratuita</strong>. In caso di qualsiasi difetto di fabbricazione, 
-                  Gaurosa sarà lieta di riparare il vostro articolo gratuitamente.
+                  I gioielli Gaurosa sono prodotti con cura e materiali di qualità. In aggiunta alla garanzia legale,
+                  tutti i prodotti Gaurosa sono forniti con una <strong>garanzia commerciale gratuita</strong>. In caso di
+                  qualsiasi difetto di fabbricazione, Gaurosa sarà lieta di riparare il vostro articolo gratuitamente.
                 </p>
 
                 <h3 className="font-semibold text-gray-900">Termini e Condizioni della Garanzia:</h3>
@@ -228,12 +238,13 @@ export default function ResiPage() {
               <div className="bg-white rounded-xl p-6 shadow-sm space-y-4">
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4">
                   <p className="text-green-800 font-medium">
-                    Prima modifica misura gratuita entro 60 giorni dal ricevimento.
+                    Prima modifica misura gratuita entro 60 giorni dal ricevimento (servizio commerciale, indipendente dal diritto di recesso legale di 14 giorni).
                   </p>
                 </div>
                 <p className="text-gray-600">
-                  Gaurosa sarà lieta di modificare la misura dell&apos;anello una sola volta gratuitamente 
-                  entro i primi 60 giorni dal ricevimento del prodotto.
+                  Gaurosa offre la modifica della misura dell&apos;anello una sola volta gratuitamente
+                  entro i primi 60 giorni dal ricevimento del prodotto. Questo servizio è distinto dal diritto di
+                  recesso legale (14 giorni dalla consegna). Attenzione: un anello modificato non è idoneo a reso/rimborso.
                 </p>
                 <p className="text-gray-600 text-sm">
                   I prodotti personalizzati non sono idonei per il ridimensionamento gratuito. 

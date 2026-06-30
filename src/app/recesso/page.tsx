@@ -143,9 +143,11 @@ export default function RecessoPage() {
                   <p className="font-semibold mb-1 text-gray-900">Come funziona il recesso</p>
                   <ul className="space-y-1">
                     {[
-                      'Hai 14 giorni dalla consegna per recedere, senza penali né motivazioni.',
+                      'Hai 14 giorni dalla consegna per recedere, senza penali né motivazioni (art. 52 Cod. Consumo).',
+                      'Le spese di spedizione per la restituzione del prodotto sono a carico del cliente.',
+                      'Il rimborso (incluse le spese di consegna standard iniziali) avviene entro 14 giorni dalla comunicazione, con lo stesso mezzo di pagamento.',
                       'Dopo l’invio riceverai una email di conferma con data e ora.',
-                      'I beni personalizzati o realizzati su misura possono essere esclusi dal recesso.',
+                      'Sono esclusi dal recesso i beni personalizzati: gioielli con incisione, anelli ridimensionati su richiesta, produzione su commessa (art. 59 lett. c Cod. Consumo).',
                     ].map((item) => (
                       <li key={item} className="flex items-start gap-1.5">
                         <ChevronRight className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-brand-rose" />
@@ -153,6 +155,12 @@ export default function RecessoPage() {
                       </li>
                     ))}
                   </ul>
+                  <p className="text-xs text-gray-500 mt-3">
+                    Puoi anche utilizzare il{' '}
+                    <a href="/modulo-recesso-tipo" className="text-brand-rose hover:underline font-medium">modulo tipo di recesso</a>{' '}
+                    (Allegato I.B Cod. Consumo) e inviarlo a{' '}
+                    <a href="mailto:info@gaurosa.it" className="text-brand-rose hover:underline">info@gaurosa.it</a>.
+                  </p>
                 </div>
               </div>
             </motion.div>

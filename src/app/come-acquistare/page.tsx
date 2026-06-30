@@ -77,7 +77,7 @@ const faqs = [
   },
   {
     q: 'Cosa succede se il prodotto non mi piace?',
-    a: 'Hai 60 giorni di tempo per richiedere un reso o un cambio. Consulta la nostra pagina Resi e Garanzia per tutti i dettagli.',
+    a: 'Hai 14 giorni dalla consegna per esercitare il diritto di recesso (legge italiana, art. 52 Cod. Consumo) e richiedere il rimborso. Consulta la nostra pagina Resi e Garanzia per tutti i dettagli.',
   },
 ];
 
