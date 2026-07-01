@@ -6,6 +6,7 @@ import Footer from '@/components/layout/Footer';
 import { CartProvider } from '@/hooks/useCart';
 import MetaPixel from '@/components/MetaPixel';
 import GoogleAnalytics from '@/components/GoogleAnalytics';
+import ClarityAnalytics from '@/components/ClarityAnalytics';
 import CookieBanner from '@/components/CookieBanner';
 
 const inter = Inter({
@@ -101,6 +102,7 @@ export default function RootLayout({
         />
         <MetaPixel />
         <GoogleAnalytics />
+        <ClarityAnalytics />
         <CartProvider>
           <div className="flex flex-col min-h-screen">
             <Header />

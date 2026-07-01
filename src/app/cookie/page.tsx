@@ -116,6 +116,11 @@ export default function CookiePage() {
                             <td className="py-2 pr-4">_ga, _ga_*</td>
                             <td className="py-2">fino a 2 anni</td>
                           </tr>
+                          <tr>
+                            <td className="py-2 pr-4">Microsoft Clarity (Microsoft Ireland) — mappe di calore e registrazioni sessioni</td>
+                            <td className="py-2 pr-4">_clck, _clsk, CLID</td>
+                            <td className="py-2">fino a 1 anno</td>
+                          </tr>
                         </tbody>
                       </table>
                     </div>
@@ -199,6 +204,7 @@ export default function CookiePage() {
                 <ul className="space-y-2">
                   {[
                     { name: 'Google Analytics', url: 'https://policies.google.com/privacy' },
+                    { name: 'Microsoft Clarity', url: 'https://privacy.microsoft.com/privacystatement' },
                     { name: 'Meta (Facebook)', url: 'https://www.facebook.com/privacy/policy/' },
                     { name: 'PayPal', url: 'https://www.paypal.com/it/legalhub/privacy-full' },
                     { name: 'Stripe', url: 'https://stripe.com/it/privacy' },
