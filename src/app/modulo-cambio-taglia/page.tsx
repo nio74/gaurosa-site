@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Wrench, Send, CheckCircle, AlertCircle, Info } from 'lucide-react';
-import Link from 'next/link';
+import Link from '@/components/ui/Link';
 
 // Ring sizes IT 6-25
 const ringMisure = Array.from({ length: 20 }, (_, i) => String(i + 6));

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Scissors, Send, CheckCircle, AlertCircle, Info } from 'lucide-react';
-import Link from 'next/link';
+import Link from '@/components/ui/Link';
 
 const fontOptions = [
   'Script (corsivo elegante)',

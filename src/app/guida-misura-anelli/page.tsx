@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { Ruler, Circle, Info, ChevronRight, Link as LinkIcon, Play } from 'lucide-react';
-import Link from 'next/link';
+import Link from '@/components/ui/Link';
 
 const ringTable = [
   { it: '6',  diam: '14,0', circ: '44,0' },

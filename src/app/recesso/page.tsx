@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { ShieldCheck, Send, CheckCircle, AlertCircle, ChevronRight, ArrowLeft } from 'lucide-react';
-import Link from 'next/link';
+import Link from '@/components/ui/Link';
 
 type FormState = 'form' | 'confirm' | 'loading' | 'success';
 

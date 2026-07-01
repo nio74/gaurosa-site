@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { Shield, Lock, Eye, CheckCircle, AlertCircle, CreditCard } from 'lucide-react';
-import Link from 'next/link';
+import Link from '@/components/ui/Link';
 
 const securityFeatures = [
   {

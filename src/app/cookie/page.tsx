@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { Cookie, ChevronRight } from 'lucide-react';
-import Link from 'next/link';
+import Link from '@/components/ui/Link';
 
 export default function CookiePage() {
   return (

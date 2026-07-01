@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
+import Link from '@/components/ui/Link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Package, 

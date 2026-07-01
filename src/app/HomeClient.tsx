@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import Link from 'next/link';
+import Link from '@/components/ui/Link';
 import Image from 'next/image';
 import { ArrowRight, Sparkles, Shield, Truck, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import Button from '@/components/ui/Button';

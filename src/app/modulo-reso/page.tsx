@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { RotateCcw, Send, CheckCircle, AlertCircle, ChevronRight } from 'lucide-react';
-import Link from 'next/link';
+import Link from '@/components/ui/Link';
 
 const motiviReso = [
   'Prodotto non corrispondente alla descrizione',

@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { Heart, Gem, Sparkles, Users } from 'lucide-react';
-import Link from 'next/link';
+import Link from '@/components/ui/Link';
 import Button from '@/components/ui/Button';
 
 const values = [

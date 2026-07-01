@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import Link from '@/components/ui/Link';
 import { Cookie, X } from 'lucide-react';
 import { getConsent, setConsent } from '@/lib/cookieConsent';
 

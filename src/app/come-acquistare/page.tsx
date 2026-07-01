@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { Search, ShoppingCart, ClipboardList, CreditCard, Package, ChevronRight, HelpCircle } from 'lucide-react';
-import Link from 'next/link';
+import Link from '@/components/ui/Link';
 
 const steps = [
   {
