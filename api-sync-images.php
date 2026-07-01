@@ -97,7 +97,6 @@ foreach (['thumb', 'medium', 'large'] as $sizeName) {
     // Nome file: {product_code}_{index}_{size}.webp
     $fileName = "{$productCode}_{$imageIndex}_{$sizeName}.webp";
     $filePath = $uploadDir . '/' . $fileName;
-    $relativeUrl = "/uploads/products/{$productCode}/{$fileName}";
 
     // Scrivi file su disco
     $bytesWritten = file_put_contents($filePath, $binaryData);
@@ -105,6 +104,13 @@ foreach (['thumb', 'medium', 'large'] as $sizeName) {
         $errors[] = "Errore scrittura file {$fileName}";
         continue;
     }
+
+    // Cache-busting: ?v=<hash del contenuto>. Il nome file è fisso (stesso prodotto/indice/size),
+    // quindi senza questo il browser — che cachea le immagini 7 giorni (max-age=604800) — mostra
+    // la vecchia immagine anche dopo un re-sync. L'hash cambia solo se l'immagine cambia davvero,
+    // così le immagini invariate restano in cache (nessuna perdita di performance).
+    $ver = substr(md5($binaryData), 0, 10);
+    $relativeUrl = "/uploads/products/{$productCode}/{$fileName}?v={$ver}";
 
     $savedFiles[$sizeName] = [
         'path' => $filePath,
